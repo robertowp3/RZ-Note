@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RZ Note - Gamma Colori Ampliata</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --header-height: 50px; --primary-bg: #f5f5f5; --sidebar-bg: #e9e9e9; --main-bg: #ffffff;
+            --text-color: #333; --border-color: #d1d1d1; --accent-color: #2d89ef; --hover-bg: #dcdcdc; --danger-color: #e53935;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; color: var(--text-color); overflow: hidden; }
+        #app-header { display: flex; align-items: center; justify-content: center; height: var(--header-height); background-color: black; color: white; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #app-header h1 { margin: 0; font-size: 1.5em; letter-spacing: 2px; }
+        #app-container { display: flex; height: calc(100vh - var(--header-height)); }
+        #sidebar { width: 320px; min-width: 280px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border-color); }
+        .sidebar-header h2 { margin: 0; font-size: 1.2em; cursor: pointer; transition: color 0.2s ease-in-out; width: 100%; display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-header h2:hover { color: var(--accent-color); }
+        .add-icon { font-size: 1.4em; font-weight: bold; color: var(--accent-color); transition: transform 0.2s ease-out; }
+        .sidebar-header h2:hover .add-icon { transform: scale(1.2) rotate(90deg); }
+        #note-list { flex-grow: 1; overflow-y: auto; padding: 10px; list-style: none; }
+        .subpage-list { list-style: none; padding-left: 20px; }
+        .page { display: flex; align-items: center; padding: 10px 15px 10px 5px; cursor: pointer; border-left: 4px solid var(--page-color, var(--accent-color)); background-color: #fff; margin-bottom: 2px; position: relative; }
+        .page:hover { background-color: var(--hover-bg); }
+        .page.active { background-color: #d1e7fd; font-weight: bold; }
+        .page .page-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 3px; cursor: pointer; }
+        .collapse-toggle { width: 20px; text-align: center; cursor: pointer; color: #555; transition: transform 0.2s ease-in-out; }
+        .collapse-toggle.collapsed { transform: rotate(-90deg); }
+        .collapse-placeholder { width: 20px; }
+        .page-controls { display: flex; align-items: center; margin-left: auto; padding-left: 5px; opacity: 0; transition: opacity 0.2s ease-in-out; }
+        .page:hover .page-controls { opacity: 1; }
+        .page-controls button { background: none; border: none; cursor: pointer; color: #555; font-size: 0.9em; padding: 2px 4px; }
+        .page-controls button:hover { color: #000; }
+        .page-controls input[type="color"] { width: 18px; height: 18px; border: none; padding: 0; background: none; cursor: pointer; }
+        .delete-btn { color: var(--danger-color) !important; }
+        .rename-input { font: inherit; padding: 2px; border: 1px solid var(--accent-color); border-radius: 3px; width: calc(100% - 8px); }
+        .sidebar-footer { padding: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
+        .sidebar-footer button, .import-label { flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background-color: #fff; cursor: pointer; text-align: center; }
+        .sidebar-footer button:hover, .import-label:hover { background-color: var(--hover-bg); }
+        #main-content { position: relative; flex-grow: 1; display: flex; flex-direction: column; background-color: var(--main-bg); }
+        #page-view { display: flex; flex-direction: column; height: 100%; }
+        #page-header { padding: 10px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        #page-header h1 { margin: 0; font-size: 1.8em; }
+        .color-pickers label { font-size: 0.9em; margin-right: 5px; }
+        .color-pickers input[type="color"] { border: 1px solid var(--border-color); padding: 2px; border-radius: 4px; vertical-align: middle; }
+        #editor-toolbar { padding: 8px 20px; border-bottom: 1px solid var(--border-color); background-color: #f8f9fa; }
+        #editor-toolbar button { width: 32px; height: 32px; font-size: 1em; background: none; border: 1px solid transparent; border-radius: 3px; margin-right: 5px; cursor: pointer; }
+        #editor-toolbar button:hover { background-color: var(--hover-bg); border-color: var(--border-color); }
+        #editor { flex-grow: 1; padding: 25px; font-size: 1.1em; line-height: 1.6; overflow-y: auto; outline: none; background-color: var(--page-background-color, var(--main-bg)); transition: background-color 0.3s, border 0.3s; }
+        #editor img { max-width: 100%; height: auto; cursor: pointer; } #editor a { color: var(--accent-color); text-decoration: underline; cursor: pointer; }
+        #editor.drag-over { border: 2px dashed var(--accent-color); background-color: #f0f8ff; }
+        #welcome-message { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center; color: #888; }
+        .hidden { display: none !important; }
+        #editor img.selected { border: 3px solid var(--accent-color); box-shadow: 0 0 10px rgba(45, 137, 239, 0.5); }
+        #image-resizer-slider { position: absolute; padding: 5px; z-index: 1000; } #image-resizer-slider.hidden { display: none; }
+        #resize-slider-input { width: 100%; cursor: ew-resize; }
+        #format-block-select { height: 32px; font-size: 0.9em; background: none; border: 1px solid var(--border-color); border-radius: 3px; margin-right: 10px; vertical-align: middle; padding: 0 5px; }
+        #editor h1, #editor h2, #editor h3 { margin-top: 1em; margin-bottom: 0.5em; line-height: 1.2; font-weight: 600; }
+        #editor h1 { font-size: 2em; } #editor h2 { font-size: 1.5em; } #editor h3 { font-size: 1.25em; }
+        #create-note-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+        #create-note-modal { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 90%; max-width: 400px; }
+        #create-note-modal h3 { margin-top: 0; }
+        #new-note-name-input { width: calc(100% - 16px); padding: 8px; font-size: 1em; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 4px; }
+        #color-swatch-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .color-swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border 0.2s; position: relative; }
+        .color-swatch.selected { border-color: black; }
+        /* NUOVO: Stile per il selettore di colore personalizzato */
+        .custom-color-swatch { background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); }
+        .custom-color-swatch input[type="color"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-actions button { padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer; }
+        #confirm-create-note-btn { background: var(--accent-color); color: white; border-color: var(--accent-color); }
+    </style>
+</head>
+<body>
+    <header id="app-header"><h1>RZ Note</h1></header>
+    <div id="app-container">
+        <aside id="sidebar">
+            <div class="sidebar-header"><h2 id="add-note-trigger" title="Clicca per aggiungere una nuova nota principale">Le tue Note <span class="add-icon">+</span></h2></div>
+            <ul id="note-list"></ul>
+            <div class="sidebar-footer"><button id="backup-btn"><i class="fas fa-download"></i> Backup</button><label for="import-input" class="import-label"><i class="fas fa-upload"></i> Importa</label><input type="file" id="import-input" accept=".json" style="display: none;"></div>
+        </aside>
+        <main id="main-content">
+            <div id="page-view" class="hidden"><div id="page-header"><h1 id="page-title-display"></h1><div class="color-pickers"><label>Sfondo Nota:</label><input type="color" id="page-bg-color-picker" title="Colore di sfondo della nota"></div></div>
+                <div id="editor-toolbar"><select id="format-block-select"><option value="p">Testo Normale</option><option value="h1">Titolo 1</option><option value="h2">Titolo 2</option><option value="h3">Titolo 3</option></select><button data-command="bold"><i class="fas fa-bold"></i></button><button data-command="italic"><i class="fas fa-italic"></i></button><button data-command="underline"><i class="fas fa-underline"></i></button><button data-command="insertOrderedList"><i class="fas fa-list-ol"></i></button><button data-command="insertUnorderedList"><i class="fas fa-list-ul"></i></button><button id="create-link-btn"><i class="fas fa-link"></i></button><button id="insert-image-btn"><i class="fas fa-image"></i></button></div>
+                <div id="editor" contenteditable="true"></div>
+            </div>
+            <div id="welcome-message"><h1>Benvenuto in RZ Note!</h1><p>Scegli tra più colori o usa il selettore personalizzato!</p></div>
+            <div id="image-resizer-slider" class="hidden"><input type="range" min="10" max="100" id="resize-slider-input"></div>
+        </main>
+    </div>
+
+    <div id="create-note-modal-overlay" class="hidden">
+        <div id="create-note-modal"><h3>Crea Nuova Nota</h3><input type="text" id="new-note-name-input" placeholder="Nome della nota..."><p style="margin-bottom: 10px; font-size: 0.9em;">Scegli un colore:</p><div id="color-swatch-container"></div><div class="modal-actions"><button id="cancel-create-note-btn">Annulla</button><button id="confirm-create-note-btn">Crea</button></div></div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let data = { notes: [] }; let currentPageId = null; let selectedImage = null;
+        const noteList = document.getElementById('note-list'); const editor = document.getElementById('editor'); const welcomeMessage = document.getElementById('welcome-message');
+        const imageResizer = document.getElementById('image-resizer-slider'); const resizeSlider = document.getElementById('resize-slider-input'); const formatBlockSelect = document.getElementById('format-block-select');
+        const modalOverlay = document.getElementById('create-note-modal-overlay'); const modalInput = document.getElementById('new-note-name-input');
+        const swatchContainer = document.getElementById('color-swatch-container'); const confirmBtn = document.getElementById('confirm-create-note-btn'); const cancelBtn = document.getElementById('cancel-create-note-btn');
+        
+        // MODIFICATO: Gamma di colori ampliata
+        const PRESET_COLORS = [
+            '#ef9a9a', '#f48fb1', '#ce93d8', '#b39ddb', '#9fa8da', '#90caf9', '#81d4fa', '#80deea', 
+            '#a5d6a7', '#c5e1a5', '#e6ee9c', '#fff59d', '#ffe082', '#ffcc80', '#ffab91', '#b0bec5'
+        ];
+        let onConfirmCreateCallback = null;
+
+        const saveData = () => localStorage.setItem('webNoteData', JSON.stringify(data));
+        const loadData = () => { const savedData = localStorage.getItem('webNoteData'); if (savedData) { const parsed = JSON.parse(savedData); data = parsed.sections ? { notes: parsed.sections.flatMap(s => s.pages) } : parsed; } else { data = { notes: [{ id: `page_${Date.now()}`, name: "Gamma Colori Ampliata", color: "#90caf9", backgroundColor: "#ffffff", content: `<h1>Nuovi Colori!</h1><p>Scegli tra una palette più vasta o usa il selettore personalizzato.</p>`, subPages: [], isCollapsed: false }] }; } };
+        const render = () => { const scrollPos = noteList.scrollTop; noteList.innerHTML = ''; if (!data.notes || data.notes.length === 0) { showWelcomeMessage(); } else { renderPagesRecursive(data.notes, noteList); } noteList.scrollTop = scrollPos; updateActivePageContent(); saveData(); };
+        const renderPagesRecursive = (pages, parentElement) => { pages.forEach(page => { const hasSubPages = page.subPages && page.subPages.length > 0; if (page.isCollapsed === undefined) page.isCollapsed = false; const pageContainer = document.createElement('li'); const pageEl = document.createElement('div'); pageEl.className = 'page'; pageEl.dataset.pageId = page.id; pageEl.style.setProperty('--page-color', page.color); if (page.id === currentPageId) pageEl.classList.add('active'); const collapseToggleHTML = hasSubPages ? `<span class="collapse-toggle ${page.isCollapsed ? 'collapsed' : ''}"><i class="fas fa-chevron-down"></i></span>` : `<span class="collapse-placeholder"></span>`; pageEl.innerHTML = `${collapseToggleHTML}<span class="page-name">${page.name}</span><div class="page-controls"><button class="rename-btn" title="Rinomina Nota"><i class="fas fa-pencil-alt"></i></button><button class="add-sibling-btn" title="Aggiungi Nota Dopo"><i class="fas fa-plus-circle"></i></button><button class="add-subpage-btn" title="Aggiungi Sotto-nota"><i class="fas fa-sitemap"></i></button><input type="color" class="page-color-picker" value="${page.color}" title="Cambia colore nota"><button class="delete-btn delete-page-btn" title="Cancella Nota"><i class="fas fa-trash"></i></button></div>`; pageContainer.appendChild(pageEl); if (hasSubPages && !page.isCollapsed) { const subPageListEl = document.createElement('ul'); subPageListEl.className = 'subpage-list'; pageContainer.appendChild(subPageListEl); renderPagesRecursive(page.subPages, subPageListEl); } parentElement.appendChild(pageContainer); }); };
+        const updateActivePageContent = () => { const pageView = document.getElementById('page-view'); const pageTitleDisplay = document.getElementById('page-title-display'); const pageBgColorPicker = document.getElementById('page-bg-color-picker'); if (currentPageId) { const { page } = findPage(currentPageId); if (page) { welcomeMessage.style.display = 'none'; pageView.classList.remove('hidden'); pageTitleDisplay.textContent = page.name; editor.innerHTML = page.content; pageBgColorPicker.value = page.backgroundColor || '#ffffff'; editor.style.backgroundColor = page.backgroundColor || '#ffffff'; } else { currentPageId = null; showWelcomeMessage(); } } else showWelcomeMessage(); };
+        const showWelcomeMessage = () => { const pageView = document.getElementById('page-view'); pageView.classList.add('hidden'); welcomeMessage.style.display = 'flex'; hideImageResizer(); };
+        const findPage = (pageId, pages = data.notes) => { for (const page of pages) { if (page.id === pageId) return { page, parentList: pages }; if (page.subPages) { const found = findPage(pageId, page.subPages); if (found.page) return found; } } return { page: null, parentList: null }; };
+        const showImageResizer = (image) => { if (selectedImage) selectedImage.classList.remove('selected'); selectedImage = image; selectedImage.classList.add('selected'); const imageRect = image.getBoundingClientRect(); const editorRect = editor.getBoundingClientRect(); imageResizer.style.left = `${imageRect.left - editorRect.left}px`; imageResizer.style.top = `${imageRect.bottom - editorRect.top + editor.scrollTop + 5}px`; imageResizer.style.width = `${imageRect.width}px`; const currentWidthPercent = (image.offsetWidth / editor.clientWidth) * 100; resizeSlider.value = currentWidthPercent; imageResizer.classList.remove('hidden'); };
+        const hideImageResizer = () => { if (selectedImage) { selectedImage.classList.remove('selected'); selectedImage = null; } imageResizer.classList.add('hidden'); };
+        const updateToolbarState = () => { let parentNode = document.getSelection().anchorNode; if (!parentNode) return; if (parentNode.nodeType !== Node.ELEMENT_NODE) { parentNode = parentNode.parentNode; } while (parentNode && parentNode !== editor) { const tagName = parentNode.tagName.toLowerCase(); if (['h1', 'h2', 'h3', 'p'].includes(tagName)) { formatBlockSelect.value = tagName; return; } parentNode = parentNode.parentNode; } formatBlockSelect.value = 'p'; };
+        
+        const showCreateNoteModal = (callback) => {
+            onConfirmCreateCallback = callback;
+            modalInput.value = '';
+            swatchContainer.innerHTML = '';
+            PRESET_COLORS.forEach((color, index) => {
+                const swatch = document.createElement('div');
+                swatch.className = 'color-swatch';
+                swatch.style.backgroundColor = color;
+                swatch.dataset.color = color;
+                if (index === 0) swatch.classList.add('selected');
+                swatchContainer.appendChild(swatch);
+            });
+            // NUOVO: Aggiunge il selettore di colore personalizzato
+            const customSwatch = document.createElement('div');
+            customSwatch.className = 'color-swatch custom-color-swatch';
+            customSwatch.innerHTML = `<input type="color" value="${PRESET_COLORS[0]}">`;
+            swatchContainer.appendChild(customSwatch);
+            modalOverlay.classList.remove('hidden');
+            modalInput.focus();
+        };
+
+        const hideCreateNoteModal = () => { modalOverlay.classList.add('hidden'); onConfirmCreateCallback = null; };
+
+        document.getElementById('add-note-trigger').addEventListener('click', () => { showCreateNoteModal((name, color) => { const newPage = { id: `page_${Date.now()}`, name, color, backgroundColor: '#ffffff', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; data.notes.push(newPage); currentPageId = newPage.id; render(); }); });
+        
+        noteList.addEventListener('click', e => {
+            const target = e.target; const pageEl = target.closest('.page'); const pageId = pageEl?.dataset.pageId; if (!pageId) return;
+            if (target.closest('.collapse-toggle')) { const { page } = findPage(pageId); if (page) { page.isCollapsed = !page.isCollapsed; render(); } }
+            else if (target.closest('.rename-btn')) { const nameSpan = pageEl.querySelector('.page-name'); const { page } = findPage(pageId); const input = document.createElement('input'); input.type = 'text'; input.value = page.name; input.className = 'rename-input'; nameSpan.replaceWith(input); input.focus(); input.select(); const saveRename = () => { if (input.value.trim()) page.name = input.value.trim(); render(); }; input.addEventListener('blur', saveRename); input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') render(); }); }
+            else if (target.closest('.add-subpage-btn')) { const { page: parentPage } = findPage(pageId); showCreateNoteModal((name, color) => { if (!parentPage.subPages) parentPage.subPages = []; const newSubPage = { id: `page_${Date.now()}`, name, color, backgroundColor: '#ffffff', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; parentPage.subPages.push(newSubPage); if (parentPage.isCollapsed) parentPage.isCollapsed = false; currentPageId = newSubPage.id; render(); }); }
+            else if (target.closest('.add-sibling-btn')) { const { page, parentList } = findPage(pageId); if (page && parentList) { showCreateNoteModal((name, color) => { const newPage = { id: `page_${Date.now()}`, name, color, backgroundColor: '#ffffff', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; const currentIndex = parentList.findIndex(p => p.id === pageId); parentList.splice(currentIndex + 1, 0, newPage); currentPageId = newPage.id; render(); }); } }
+            else if (target.closest('.delete-page-btn')) { const { page, parentList } = findPage(pageId); if (page && parentList && confirm(`Cancellare "${page.name}"?`)) { parentList.splice(parentList.findIndex(p => p.id === page.id), 1); if (currentPageId === page.id) currentPageId = null; render(); } }
+            else if (pageEl) { currentPageId = pageId; hideImageResizer(); render(); }
+        });
+        
+        swatchContainer.addEventListener('click', e => {
+            const target = e.target;
+            if (target.classList.contains('color-swatch') || target.closest('.color-swatch')) {
+                swatchContainer.querySelector('.selected')?.classList.remove('selected');
+                const swatch = target.closest('.color-swatch');
+                swatch.classList.add('selected');
+            }
+        });
+        
+        confirmBtn.addEventListener('click', () => {
+            const name = modalInput.value.trim();
+            const selectedSwatch = swatchContainer.querySelector('.selected');
+            if (name && selectedSwatch && onConfirmCreateCallback) {
+                // NUOVO: Controlla se è stato scelto un colore personalizzato o un preset
+                const color = selectedSwatch.dataset.color || selectedSwatch.querySelector('input[type="color"]').value;
+                onConfirmCreateCallback(name, color);
+            }
+            hideCreateNoteModal();
+        });
+        
+        cancelBtn.addEventListener('click', hideCreateNoteModal); modalOverlay.addEventListener('click', (e) => { if(e.target === modalOverlay) hideCreateNoteModal(); });
+        editor.addEventListener('click', (e) => { const target = e.target; if (target.tagName === 'A') { e.preventDefault(); const url = target.getAttribute('href'); if (url) { window.open(url, '_blank', 'noopener,noreferrer'); } return; } if (target.tagName === 'IMG') { showImageResizer(target); } else if (selectedImage && !imageResizer.contains(target)) { hideImageResizer(); } updateToolbarState(); });
+        formatBlockSelect.addEventListener('change', () => { const format = formatBlockSelect.value; if (format) { document.execCommand('formatBlock', false, `<${format}>`); editor.focus(); } });
+        editor.addEventListener('keyup', updateToolbarState); document.addEventListener('selectionchange', () => { if (document.activeElement === editor) updateToolbarState(); });
+        document.getElementById('editor-toolbar').addEventListener('click', e => { const button = e.target.closest('button'); const command = button?.dataset.command; if (command) { document.execCommand(command, false, null); editor.focus(); } });
+        resizeSlider.addEventListener('input', () => { if (selectedImage) { selectedImage.style.width = resizeSlider.value + '%'; selectedImage.style.height = 'auto'; showImageResizer(selectedImage); } });
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => editor.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false));
+        editor.addEventListener('dragover', () => editor.classList.add('drag-over')); editor.addEventListener('dragleave', () => editor.classList.remove('drag-over'));
+        editor.addEventListener('drop', e => { editor.classList.remove('drag-over'); const files = e.dataTransfer.files; for (const file of files) { if (file.type.startsWith('image/')) { const reader = new FileReader(); reader.onload = (re) => document.execCommand('insertHTML', false, `<img src="${re.target.result}" style="width:50%;height:auto;">`); reader.readAsDataURL(file); } } });
+        noteList.addEventListener('input', e => { const t = e.target; if (t.classList.contains('page-color-picker')) { const { page: p } = findPage(t.closest('.page').dataset.pageId); if (p) { p.color = t.value; saveData(); t.closest('.page').style.setProperty('--page-color', t.value); } } });
+        editor.addEventListener('input', () => { if(currentPageId){const{page:p}=findPage(currentPageId);if(p)p.content=editor.innerHTML;saveData();}});
+        document.getElementById('page-bg-color-picker').addEventListener('input', e => { if(currentPageId){const{page:p}=findPage(currentPageId);if(p){p.backgroundColor=e.target.value;editor.style.backgroundColor=e.target.value;saveData();}}});
+        document.getElementById('create-link-btn').addEventListener('click', () => { const u = prompt("URL:", "https://"); if(u)document.execCommand('createLink',false,u); editor.focus();});
+        document.getElementById('insert-image-btn').addEventListener('click', () => { const u=prompt("URL Immagine:");if(u)document.execCommand('insertHTML',false,`<img src="${u}" style="width:50%;height:auto;">`); editor.focus();});
+        document.getElementById('backup-btn').addEventListener('click', () => { const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download=`rznote_backup.json`;a.click();URL.revokeObjectURL(a.href);});
+        document.getElementById('import-input').addEventListener('change', e => { const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=(v)=>{try{const i=JSON.parse(v.target.result);if(i&&Array.isArray(i.notes)&&confirm("Sovrascrivere?")){data=i;currentPageId=null;render();}else alert("File non valido.");}catch{alert("Errore.");}};r.readAsText(f);e.target.value='';});
+
+        loadData();
+        render();
+    });
+    </script>
+</body>
+</html>
