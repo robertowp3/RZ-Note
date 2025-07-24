@@ -44,12 +44,24 @@
         #page-view { display: flex; flex-direction: column; height: 100%; }
         #page-header { padding: 10px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         #page-header h1 { margin: 0; font-size: 1.8em; }
+        .color-pickers { display: flex; align-items: center; } /* NUOVO: Aggiunto per allineare i controlli */
         .color-pickers label { font-size: 0.9em; margin-right: 5px; }
         .color-pickers input[type="color"] { border: 1px solid var(--border-color); padding: 2px; border-radius: 4px; vertical-align: middle; }
+        /* NUOVO: Stile per il pulsante copia */
+        #copy-note-btn {
+            margin-left: 15px; padding: 4px 10px; font-size: 0.9em; border: 1px solid var(--border-color);
+            border-radius: 4px; background-color: #fff; cursor: pointer; transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+        #copy-note-btn:hover { background-color: var(--hover-bg); }
+        #copy-note-btn.copied { background-color: #a5d6a7; color: #333; border-color: #a5d6a7; }
+
         #editor-toolbar { padding: 8px 20px; border-bottom: 1px solid var(--border-color); background-color: #f8f9fa; }
         #editor-toolbar button { width: 32px; height: 32px; font-size: 1em; background: none; border: 1px solid transparent; border-radius: 3px; margin-right: 5px; cursor: pointer; }
         #editor-toolbar button:hover { background-color: var(--hover-bg); border-color: var(--border-color); }
-        #editor { flex-grow: 1; padding: 25px; font-size: 1.1em; line-height: 1.6; overflow-y: auto; outline: none; background-color: var(--page-background-color, var(--main-bg)); transition: background-color 0.3s, border 0.3s; }
+        #editor {
+            flex-grow: 1; padding: 25px; font-size: 10px; font-weight: 400; line-height: 1.6; overflow-y: auto; outline: none;
+            background-color: var(--page-background-color, var(--main-bg)); transition: background-color 0.3s, border 0.3s;
+        }
         #editor img { max-width: 100%; height: auto; cursor: pointer; } #editor a { color: var(--accent-color); text-decoration: underline; cursor: pointer; }
         #editor.drag-over { border: 2px dashed var(--accent-color); background-color: #f0f8ff; }
         #welcome-message { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center; color: #888; }
@@ -57,7 +69,10 @@
         #editor img.selected { border: 3px solid var(--accent-color); box-shadow: 0 0 10px rgba(45, 137, 239, 0.5); }
         #image-resizer-slider { position: absolute; padding: 5px; z-index: 1000; } #image-resizer-slider.hidden { display: none; }
         #resize-slider-input { width: 100%; cursor: ew-resize; }
-        #format-block-select { height: 32px; font-size: 0.9em; background: none; border: 1px solid var(--border-color); border-radius: 3px; margin-right: 10px; vertical-align: middle; padding: 0 5px; }
+        #format-block-select, #font-size-select {
+            height: 32px; font-size: 0.9em; background: none; border: 1px solid var(--border-color);
+            border-radius: 3px; margin-right: 10px; vertical-align: middle; padding: 0 5px;
+        }
         #editor h1, #editor h2, #editor h3 { margin-top: 1em; margin-bottom: 0.5em; line-height: 1.2; font-weight: 600; }
         #editor h1 { font-size: 2em; } #editor h2 { font-size: 1.5em; } #editor h3 { font-size: 1.25em; }
         #create-note-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; justify-content: center; align-items: center; }
@@ -67,7 +82,6 @@
         #color-swatch-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
         .color-swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border 0.2s; position: relative; }
         .color-swatch.selected { border-color: black; }
-        /* NUOVO: Stile per il selettore di colore personalizzato */
         .custom-color-swatch { background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); }
         .custom-color-swatch input[type="color"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
@@ -84,8 +98,21 @@
             <div class="sidebar-footer"><button id="backup-btn"><i class="fas fa-download"></i> Backup</button><label for="import-input" class="import-label"><i class="fas fa-upload"></i> Importa</label><input type="file" id="import-input" accept=".json" style="display: none;"></div>
         </aside>
         <main id="main-content">
-            <div id="page-view" class="hidden"><div id="page-header"><h1 id="page-title-display"></h1><div class="color-pickers"><label>Sfondo Nota:</label><input type="color" id="page-bg-color-picker" title="Colore di sfondo della nota"></div></div>
-                <div id="editor-toolbar"><select id="format-block-select"><option value="p">Testo Normale</option><option value="h1">Titolo 1</option><option value="h2">Titolo 2</option><option value="h3">Titolo 3</option></select><button data-command="bold"><i class="fas fa-bold"></i></button><button data-command="italic"><i class="fas fa-italic"></i></button><button data-command="underline"><i class="fas fa-underline"></i></button><button data-command="insertOrderedList"><i class="fas fa-list-ol"></i></button><button data-command="insertUnorderedList"><i class="fas fa-list-ul"></i></button><button id="create-link-btn"><i class="fas fa-link"></i></button><button id="insert-image-btn"><i class="fas fa-image"></i></button></div>
+            <div id="page-view" class="hidden">
+                <!-- MODIFICATO: Aggiunto il pulsante di copia -->
+                <div id="page-header">
+                    <h1 id="page-title-display"></h1>
+                    <div class="color-pickers">
+                        <label>Sfondo Nota:</label>
+                        <input type="color" id="page-bg-color-picker" title="Colore di sfondo della nota">
+                        <button id="copy-note-btn" title="Copia tutto il contenuto della nota"><i class="fas fa-copy"></i> Copia</button>
+                    </div>
+                </div>
+                <div id="editor-toolbar">
+                    <select id="format-block-select"><option value="p">Testo Normale</option><option value="h1">Titolo 1</option><option value="h2">Titolo 2</option><option value="h3">Titolo 3</option></select>
+                    <select id="font-size-select" title="Dimensione testo"><option value="10px">10px</option><option value="12px">12px</option><option value="14px">14px</option><option value="16px">16px</option><option value="18px">18px</option><option value="24px">24px</option></select>
+                    <button data-command="bold"><i class="fas fa-bold"></i></button><button data-command="italic"><i class="fas fa-italic"></i></button><button data-command="underline"><i class="fas fa-underline"></i></button><button data-command="insertOrderedList"><i class="fas fa-list-ol"></i></button><button data-command="insertUnorderedList"><i class="fas fa-list-ul"></i></button><button id="create-link-btn"><i class="fas fa-link"></i></button><button id="insert-image-btn"><i class="fas fa-image"></i></button>
+                </div>
                 <div id="editor" contenteditable="true"></div>
             </div>
             <div id="welcome-message"><h1>Benvenuto in RZ Note!</h1><p>Scegli tra più colori o usa il selettore personalizzato!</p></div>
@@ -104,8 +131,9 @@
         const imageResizer = document.getElementById('image-resizer-slider'); const resizeSlider = document.getElementById('resize-slider-input'); const formatBlockSelect = document.getElementById('format-block-select');
         const modalOverlay = document.getElementById('create-note-modal-overlay'); const modalInput = document.getElementById('new-note-name-input');
         const swatchContainer = document.getElementById('color-swatch-container'); const confirmBtn = document.getElementById('confirm-create-note-btn'); const cancelBtn = document.getElementById('cancel-create-note-btn');
+        const fontSizeSelect = document.getElementById('font-size-select');
+        const copyNoteBtn = document.getElementById('copy-note-btn'); // NUOVO
         
-        // MODIFICATO: Gamma di colori ampliata
         const PRESET_COLORS = [
             '#ef9a9a', '#f48fb1', '#ce93d8', '#b39ddb', '#9fa8da', '#90caf9', '#81d4fa', '#80deea', 
             '#a5d6a7', '#c5e1a5', '#e6ee9c', '#fff59d', '#ffe082', '#ffcc80', '#ffab91', '#b0bec5'
@@ -121,8 +149,48 @@
         const findPage = (pageId, pages = data.notes) => { for (const page of pages) { if (page.id === pageId) return { page, parentList: pages }; if (page.subPages) { const found = findPage(pageId, page.subPages); if (found.page) return found; } } return { page: null, parentList: null }; };
         const showImageResizer = (image) => { if (selectedImage) selectedImage.classList.remove('selected'); selectedImage = image; selectedImage.classList.add('selected'); const imageRect = image.getBoundingClientRect(); const editorRect = editor.getBoundingClientRect(); imageResizer.style.left = `${imageRect.left - editorRect.left}px`; imageResizer.style.top = `${imageRect.bottom - editorRect.top + editor.scrollTop + 5}px`; imageResizer.style.width = `${imageRect.width}px`; const currentWidthPercent = (image.offsetWidth / editor.clientWidth) * 100; resizeSlider.value = currentWidthPercent; imageResizer.classList.remove('hidden'); };
         const hideImageResizer = () => { if (selectedImage) { selectedImage.classList.remove('selected'); selectedImage = null; } imageResizer.classList.add('hidden'); };
-        const updateToolbarState = () => { let parentNode = document.getSelection().anchorNode; if (!parentNode) return; if (parentNode.nodeType !== Node.ELEMENT_NODE) { parentNode = parentNode.parentNode; } while (parentNode && parentNode !== editor) { const tagName = parentNode.tagName.toLowerCase(); if (['h1', 'h2', 'h3', 'p'].includes(tagName)) { formatBlockSelect.value = tagName; return; } parentNode = parentNode.parentNode; } formatBlockSelect.value = 'p'; };
         
+        const applyFontSize = (size) => {
+            const selection = window.getSelection();
+            if (!selection.rangeCount || selection.isCollapsed) return;
+            editor.focus();
+            const range = selection.getRangeAt(0);
+            const span = document.createElement('span');
+            span.style.fontSize = size;
+            try {
+                span.appendChild(range.extractContents());
+                range.insertNode(span);
+            } catch (e) {
+                document.execCommand('fontSize', false, '1');
+                const fontElements = editor.getElementsByTagName("font");
+                while (fontElements.length > 0) {
+                    const parent = fontElements[0].parentNode;
+                    const newSpan = document.createElement('span');
+                    newSpan.style.fontSize = size;
+                    newSpan.innerHTML = fontElements[0].innerHTML;
+                    parent.replaceChild(newSpan, fontElements[0]);
+                }
+            }
+            selection.removeAllRanges();
+            selection.addRange(range);
+        };
+        const updateToolbarState = () => {
+            let parentNode = document.getSelection().anchorNode;
+            if (!parentNode) return;
+            if (parentNode.nodeType !== Node.ELEMENT_NODE) { parentNode = parentNode.parentNode; }
+            let formatFound = false, fontSizeFound = false;
+            while (parentNode && parentNode !== editor) {
+                if (!formatFound) {
+                    const tagName = parentNode.tagName.toLowerCase();
+                    if (['h1', 'h2', 'h3', 'p'].includes(tagName)) { formatBlockSelect.value = tagName; formatFound = true; }
+                }
+                if (!fontSizeFound && parentNode.style && parentNode.style.fontSize) { fontSizeSelect.value = parentNode.style.fontSize; fontSizeFound = true; }
+                if (formatFound && fontSizeFound) break;
+                parentNode = parentNode.parentNode;
+            }
+            if (!formatFound) formatBlockSelect.value = 'p';
+            if (!fontSizeFound) fontSizeSelect.value = '10px';
+        };
         const showCreateNoteModal = (callback) => {
             onConfirmCreateCallback = callback;
             modalInput.value = '';
@@ -135,7 +203,6 @@
                 if (index === 0) swatch.classList.add('selected');
                 swatchContainer.appendChild(swatch);
             });
-            // NUOVO: Aggiunge il selettore di colore personalizzato
             const customSwatch = document.createElement('div');
             customSwatch.className = 'color-swatch custom-color-swatch';
             customSwatch.innerHTML = `<input type="color" value="${PRESET_COLORS[0]}">`;
@@ -143,7 +210,6 @@
             modalOverlay.classList.remove('hidden');
             modalInput.focus();
         };
-
         const hideCreateNoteModal = () => { modalOverlay.classList.add('hidden'); onConfirmCreateCallback = null; };
 
         document.getElementById('add-note-trigger').addEventListener('click', () => { showCreateNoteModal((name, color) => { const newPage = { id: `page_${Date.now()}`, name, color, backgroundColor: '#ffffff', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; data.notes.push(newPage); currentPageId = newPage.id; render(); }); });
@@ -171,16 +237,36 @@
             const name = modalInput.value.trim();
             const selectedSwatch = swatchContainer.querySelector('.selected');
             if (name && selectedSwatch && onConfirmCreateCallback) {
-                // NUOVO: Controlla se è stato scelto un colore personalizzato o un preset
                 const color = selectedSwatch.dataset.color || selectedSwatch.querySelector('input[type="color"]').value;
                 onConfirmCreateCallback(name, color);
             }
             hideCreateNoteModal();
         });
+
+        // NUOVO: Listener per il pulsante copia
+        copyNoteBtn.addEventListener('click', () => {
+            if (!currentPageId) return;
+
+            const textToCopy = editor.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalContent = copyNoteBtn.innerHTML;
+                copyNoteBtn.innerHTML = `<i class="fas fa-check"></i> Copiato!`;
+                copyNoteBtn.classList.add('copied');
+                
+                setTimeout(() => {
+                    copyNoteBtn.innerHTML = originalContent;
+                    copyNoteBtn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Errore durante la copia negli appunti:', err);
+                alert('Impossibile copiare il testo.');
+            });
+        });
         
         cancelBtn.addEventListener('click', hideCreateNoteModal); modalOverlay.addEventListener('click', (e) => { if(e.target === modalOverlay) hideCreateNoteModal(); });
         editor.addEventListener('click', (e) => { const target = e.target; if (target.tagName === 'A') { e.preventDefault(); const url = target.getAttribute('href'); if (url) { window.open(url, '_blank', 'noopener,noreferrer'); } return; } if (target.tagName === 'IMG') { showImageResizer(target); } else if (selectedImage && !imageResizer.contains(target)) { hideImageResizer(); } updateToolbarState(); });
         formatBlockSelect.addEventListener('change', () => { const format = formatBlockSelect.value; if (format) { document.execCommand('formatBlock', false, `<${format}>`); editor.focus(); } });
+        fontSizeSelect.addEventListener('change', () => { applyFontSize(fontSizeSelect.value); });
         editor.addEventListener('keyup', updateToolbarState); document.addEventListener('selectionchange', () => { if (document.activeElement === editor) updateToolbarState(); });
         document.getElementById('editor-toolbar').addEventListener('click', e => { const button = e.target.closest('button'); const command = button?.dataset.command; if (command) { document.execCommand(command, false, null); editor.focus(); } });
         resizeSlider.addEventListener('input', () => { if (selectedImage) { selectedImage.style.width = resizeSlider.value + '%'; selectedImage.style.height = 'auto'; showImageResizer(selectedImage); } });
