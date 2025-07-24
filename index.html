@@ -89,6 +89,7 @@
     </style>
 </head>
 <body>
+    <!-- HTML è rimasto invariato -->
     <header id="app-header">
         <h1>RZ Note</h1>
         <button id="theme-toggle" title="Cambia tema"><i class="fas fa-moon"></i><i class="fas fa-sun"></i></button>
@@ -141,9 +142,9 @@
             </div>
         </div>
     </div>
-
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // ... Il codice fino a qui è invariato e corretto ...
         const themeToggle = document.getElementById('theme-toggle');
         const body = document.body;
         const applyTheme = (theme) => { theme === 'dark' ? body.classList.add('dark-mode') : body.classList.remove('dark-mode'); };
@@ -186,65 +187,48 @@
         // NUOVA E DEFINITIVA FUNZIONE PER APPLICARE LA DIMENSIONE DEL CARATTERE
         // =================================================================================
         const applyFontSize = (size) => {
-            if (!savedRange) { // Controlla se abbiamo una selezione salvata
-                console.warn("Nessuna selezione salvata. Impossibile applicare la dimensione.");
-                return;
-            }
+            if (!savedRange) { return; }
 
-            editor.focus(); // Assicurati che l'editor abbia il focus
-
+            editor.focus();
             const selection = window.getSelection();
             selection.removeAllRanges();
-            selection.addRange(savedRange); // Ripristina la selezione ESATTA dell'utente
+            selection.addRange(savedRange);
 
-            if (savedRange.collapsed) {
-                // Se non c'è testo selezionato, crea uno span in cui l'utente inizierà a scrivere
+            // Usa un comando che crea un tag facile da trovare.
+            // Usiamo un ID unico per assicurarci di modificare solo ciò che vogliamo.
+            const uniqueId = `temp-font-size-${Date.now()}`;
+            document.execCommand('fontName', false, uniqueId);
+            
+            // Trova tutti gli elementi che il comando ha appena creato.
+            const fontElements = editor.querySelectorAll(`font[face="${uniqueId}"]`);
+
+            fontElements.forEach(fontElement => {
                 const span = document.createElement('span');
                 span.style.fontSize = size;
-                span.innerHTML = '​'; // Carattere a larghezza zero per posizionare il cursore
-                savedRange.insertNode(span);
                 
-                // Muove il cursore all'interno dello span
-                const newRange = document.createRange();
-                newRange.setStart(span, 1);
-                newRange.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(newRange);
-                savedRange = newRange;
-
-            } else {
-                // Se c'è testo selezionato, avvolgilo
-                const span = document.createElement('span');
-                span.style.fontSize = size;
-
-                const fragment = savedRange.extractContents(); // Estrae il contenuto (con HTML)
-                span.appendChild(fragment); // Lo mette nello span
-
-                savedRange.insertNode(span); // Inserisce lo span al posto del contenuto estratto
+                // Sposta tutto il contenuto dal <font> allo <span>
+                while(fontElement.firstChild) {
+                    span.appendChild(fontElement.firstChild);
+                }
                 
-                // Reseleziona il contenuto appena modificato per un'esperienza utente fluida
-                savedRange.selectNodeContents(span);
-                selection.removeAllRanges();
-                selection.addRange(savedRange);
-            }
+                // Sostituisce il <font> con il nostro <span>
+                fontElement.parentNode.replaceChild(span, fontElement);
+            });
         };
-
+        
         const saveSelection = () => {
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
-                // Salva solo se la selezione è all'interno dell'editor
                 if (editor.contains(range.commonAncestorContainer)) {
                     savedRange = range.cloneRange();
                 }
             }
         };
-        
-        // Listener per salvare la selezione
         editor.addEventListener('mouseup', saveSelection);
         editor.addEventListener('keyup', saveSelection);
         editor.addEventListener('focus', saveSelection);
-        document.addEventListener('selectionchange', () => { if (document.activeElement === editor) { saveSelection(); } });
+        document.addEventListener('selectionchange', saveSelection);
         // =================================================================================
 
         const updateToolbarState = () => { /* ... */ };
@@ -274,22 +258,13 @@
         copyNoteBtn.addEventListener('click', () => { if (!currentPageId) return; const textToCopy = editor.innerText; navigator.clipboard.writeText(textToCopy).then(() => { const originalTitle = copyNoteBtn.title; const originalIcon = copyNoteBtn.innerHTML; copyNoteBtn.title = 'Copiato!'; copyNoteBtn.innerHTML = `<i class="fas fa-check"></i>`; copyNoteBtn.classList.add('copied'); setTimeout(() => { copyNoteBtn.title = originalTitle; copyNoteBtn.innerHTML = originalIcon; copyNoteBtn.classList.remove('copied'); }, 2000); }).catch(err => { console.error('Errore copia:', err); alert('Impossibile copiare.'); }); });
         cancelBtn.addEventListener('click', hideCreateNoteModal); modalOverlay.addEventListener('click', (e) => { if(e.target === modalOverlay) hideCreateNoteModal(); });
         
-        // Listener per il selettore della dimensione
         fontSizeSelect.addEventListener('change', () => applyFontSize(fontSizeSelect.value));
         
-        // Listener per gli altri comandi della toolbar
-        document.getElementById('editor-toolbar').addEventListener('click', e => {
-            const button = e.target.closest('button[data-command]');
-            if (button) {
-                document.execCommand(button.dataset.command, false, null);
-                editor.focus();
-                saveSelection();
-            }
-        });
+        document.getElementById('editor-toolbar').addEventListener('click', e => { const button = e.target.closest('button[data-command]'); if (button) { document.execCommand(button.dataset.command, false, null); editor.focus(); }});
         
         editor.addEventListener('input', () => { if(currentPageId){const{page}=findPage(currentPageId);if(page)page.content=editor.innerHTML;saveData();}});
         document.getElementById('page-bg-color-picker').addEventListener('input', e => { if(currentPageId){const{page}=findPage(currentPageId);if(page){page.backgroundColor=e.target.value;editor.style.setProperty('--page-background-color', e.target.value);saveData();}}});
-        document.getElementById('create-link-btn').addEventListener('click', () => { const u = prompt("URL:", "https://"); if(u)document.execCommand('createLink',false,u); editor.focus(); saveSelection();});
+        document.getElementById('create-link-btn').addEventListener('click', () => { const u = prompt("URL:", "https://"); if(u)document.execCommand('createLink',false,u); editor.focus();});
         
         loadData();
         render();
