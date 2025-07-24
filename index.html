@@ -161,10 +161,8 @@
         let onConfirmCreateCallback = null;
 
         const saveData = () => localStorage.setItem('webNoteData', JSON.stringify(data));
-        const loadData = () => { const savedData = localStorage.getItem('webNoteData'); if (savedData) { data = JSON.parse(savedData); } else { data = { notes: [{ id: `page_${Date.now()}`, name: "Benvenuto!", color: "#3498db", backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>Interfaccia Moderna!</h1><p>Ora puoi usare il tema scuro. Clicca l'icona <i class="fas fa-moon"></i> / <i class="fas fa-sun"></i> in alto a destra.</p><p>Puoi anche aggiungere una nuova nota qui con l'icona <i class="fas fa-plus-circle"></i>.</p>`, subPages: [], isCollapsed: false }] }; } };
+        const loadData = () => { const savedData = localStorage.getItem('webNoteData'); if (savedData) { data = JSON.parse(savedData); } else { data = { notes: [{ id: `page_${Date.now()}`, name: "Benvenuto!", color: "#3498db", backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>Interfaccia Moderna!</h1><p>Ora puoi usare anche il tema scuro. Clicca l'icona <i class="fas fa-moon"></i> / <i class="fas fa-sun"></i> in alto a destra.</p><p>Puoi anche aggiungere una nuova nota qui con l'icona <i class="fas fa-plus-circle"></i>.</p>`, subPages: [], isCollapsed: false }] }; } };
         const render = () => { const scrollPos = noteList.scrollTop; noteList.innerHTML = ''; if (!data.notes || data.notes.length === 0) { showWelcomeMessage(); } else { renderPagesRecursive(data.notes, noteList); } noteList.scrollTop = scrollPos; updateActivePageContent(); saveData(); };
-        
-        // MODIFICATO: Aggiunto il nuovo pulsante "add-sibling-btn"
         const renderPagesRecursive = (pages, parentElement) => {
             pages.forEach(page => {
                 const hasSubPages = page.subPages && page.subPages.length > 0;
@@ -180,7 +178,6 @@
                     <span class="page-name">${page.name}</span>
                     <div class="page-controls">
                         <button class="rename-btn" title="Rinomina"><i class="fas fa-pencil-alt"></i></button>
-                        <!-- NUOVO: Pulsante per aggiungere una nota di seguito -->
                         <button class="add-sibling-btn" title="Aggiungi nota qui"><i class="fas fa-plus-circle"></i></button>
                         <button class="add-subpage-btn" title="Aggiungi sotto-nota"><i class="fas fa-sitemap"></i></button>
                         <input type="color" class="page-color-picker" value="${page.color}" title="Cambia colore">
@@ -196,79 +193,64 @@
                 parentElement.appendChild(pageContainer);
             });
         };
-
         const updateActivePageContent = () => { const pageView = document.getElementById('page-view'); const pageTitleDisplay = document.getElementById('page-title-display'); const pageBgColorPicker = document.getElementById('page-bg-color-picker'); if (currentPageId) { const { page } = findPage(currentPageId); if (page) { welcomeMessage.classList.add('hidden'); pageView.classList.remove('hidden'); pageTitleDisplay.textContent = page.name; editor.innerHTML = page.content; const defaultBg = body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd'; const bgColor = page.backgroundColor || defaultBg; pageBgColorPicker.value = bgColor; editor.style.setProperty('--page-background-color', bgColor); } else { currentPageId = null; showWelcomeMessage(); } } else showWelcomeMessage(); };
         const showWelcomeMessage = () => { document.getElementById('page-view').classList.add('hidden'); welcomeMessage.classList.remove('hidden'); };
         const findPage = (pageId, pages = data.notes) => { for (const page of pages) { if (page.id === pageId) return { page, parentList: pages }; if (page.subPages) { const found = findPage(pageId, page.subPages); if (found.page) return found; } } return { page: null, parentList: null }; };
         
-        // MODIFICATO: showCreateNoteModal ora accetta opzioni per preselezionare un colore
-        const showCreateNoteModal = (callback, options = {}) => {
-            onConfirmCreateCallback = callback;
-            modalInput.value = '';
-            swatchContainer.innerHTML = '';
-            const defaultColor = options.defaultColor || PRESET_COLORS[0];
-            const isPreset = PRESET_COLORS.includes(defaultColor);
-
-            PRESET_COLORS.forEach(color => {
-                const swatch = document.createElement('div');
-                swatch.className = 'color-swatch';
-                swatch.style.backgroundColor = color;
-                swatch.dataset.color = color;
-                if (color === defaultColor) swatch.classList.add('selected');
-                swatchContainer.appendChild(swatch);
-            });
-
-            const customSwatch = document.createElement('div');
-            customSwatch.className = 'color-swatch custom-color-swatch';
-            if (!isPreset) customSwatch.classList.add('selected');
-            const customInput = document.createElement('input');
-            customInput.type = 'color';
-            customInput.value = defaultColor;
-            customSwatch.appendChild(customInput);
-            swatchContainer.appendChild(customSwatch);
-
-            modalOverlay.classList.remove('hidden');
-            modalInput.focus();
+        // NUOVO: Funzione corretta e robusta per applicare la dimensione del font
+        const applyFontSize = (size) => {
+            editor.focus();
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0 && !selection.isCollapsed) {
+                const selectedText = selection.toString();
+                const newHtml = `<span style="font-size: ${size};">${selectedText}</span>`;
+                document.execCommand('insertHTML', false, newHtml);
+            }
         };
 
+        const updateToolbarState = () => {
+            let parentNode = document.getSelection().anchorNode; if (!parentNode) return;
+            if (parentNode.nodeType !== Node.ELEMENT_NODE) { parentNode = parentNode.parentNode; }
+            let formatFound = false, fontSizeFound = false;
+            while (parentNode && parentNode !== editor) {
+                if (!formatFound) { const tagName = parentNode.tagName.toLowerCase(); if (['h1', 'h2', 'h3', 'p'].includes(tagName)) { formatBlockSelect.value = tagName; formatFound = true; } }
+                if (!fontSizeFound && parentNode.style && parentNode.style.fontSize) { fontSizeSelect.value = parentNode.style.fontSize; fontSizeFound = true; }
+                if (formatFound && fontSizeFound) break;
+                parentNode = parentNode.parentNode;
+            }
+            if (!formatFound) formatBlockSelect.value = 'p'; if (!fontSizeFound) fontSizeSelect.value = '10px';
+        };
+        const showCreateNoteModal = (callback, options = {}) => {
+            onConfirmCreateCallback = callback; modalInput.value = ''; swatchContainer.innerHTML = '';
+            const defaultColor = options.defaultColor || PRESET_COLORS[0]; const isPreset = PRESET_COLORS.includes(defaultColor);
+            PRESET_COLORS.forEach(color => { const swatch = document.createElement('div'); swatch.className = 'color-swatch'; swatch.style.backgroundColor = color; swatch.dataset.color = color; if (color === defaultColor) swatch.classList.add('selected'); swatchContainer.appendChild(swatch); });
+            const customSwatch = document.createElement('div'); customSwatch.className = 'color-swatch custom-color-swatch'; if (!isPreset) customSwatch.classList.add('selected');
+            const customInput = document.createElement('input'); customInput.type = 'color'; customInput.value = defaultColor; customSwatch.appendChild(customInput); swatchContainer.appendChild(customSwatch);
+            modalOverlay.classList.remove('hidden'); modalInput.focus();
+        };
         const hideCreateNoteModal = () => { modalOverlay.classList.add('hidden'); onConfirmCreateCallback = null; };
         
         document.getElementById('add-note-trigger').addEventListener('click', () => { showCreateNoteModal((name, color) => { const newPage = { id: `page_${Date.now()}`, name, color, backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; data.notes.push(newPage); currentPageId = newPage.id; render(); }); });
-        
-        // MODIFICATO: Aggiunto il gestore per 'add-sibling-btn'
         noteList.addEventListener('click', e => {
-            const pageEl = e.target.closest('.page');
-            if (!pageEl) return;
+            const pageEl = e.target.closest('.page'); if (!pageEl) return;
             const pageId = pageEl.dataset.pageId;
-
             if (e.target.closest('.collapse-toggle')) { const { page } = findPage(pageId); if (page) { page.isCollapsed = !page.isCollapsed; render(); } }
-            else if (e.target.closest('.rename-btn')) { /* ... logica rinomina ... */ }
-            
-            // NUOVO: Logica per aggiungere una nota sorella
-            else if (e.target.closest('.add-sibling-btn')) {
-                const { page: sourcePage, parentList } = findPage(pageId);
-                if (sourcePage && parentList) {
-                    showCreateNoteModal((name, color) => {
-                        const newPage = { id: `page_${Date.now()}`, name, color, backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false };
-                        const currentIndex = parentList.findIndex(p => p.id === pageId);
-                        parentList.splice(currentIndex + 1, 0, newPage);
-                        currentPageId = newPage.id;
-                        render();
-                    }, { defaultColor: sourcePage.color }); // Passa il colore come opzione
-                }
-            }
-            
+            else if (e.target.closest('.rename-btn')) { /* ... */ }
+            else if (e.target.closest('.add-sibling-btn')) { const { page: sourcePage, parentList } = findPage(pageId); if (sourcePage && parentList) { showCreateNoteModal((name, color) => { const newPage = { id: `page_${Date.now()}`, name, color, backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; const currentIndex = parentList.findIndex(p => p.id === pageId); parentList.splice(currentIndex + 1, 0, newPage); currentPageId = newPage.id; render(); }, { defaultColor: sourcePage.color }); } }
             else if (e.target.closest('.add-subpage-btn')) { const { page: parentPage } = findPage(pageId); if (parentPage) { showCreateNoteModal((name, color) => { if (!parentPage.subPages) parentPage.subPages = []; const newSubPage = { id: `page_${Date.now()}`, name, color, backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; parentPage.subPages.push(newSubPage); if (parentPage.isCollapsed) parentPage.isCollapsed = false; currentPageId = newSubPage.id; render(); }, { defaultColor: parentPage.color }); } }
             else if (e.target.closest('.delete-page-btn')) { const { page, parentList } = findPage(pageId); if (page && parentList && confirm(`Cancellare "${page.name}"?`)) { parentList.splice(parentList.findIndex(p => p.id === page.id), 1); if (currentPageId === page.id) currentPageId = null; render(); } }
             else { currentPageId = pageId; render(); }
         });
-
-        // ... (resto del JS da qui in poi rimane quasi identico) ...
+        
         confirmBtn.addEventListener('click', () => { const name = modalInput.value.trim(); const selectedSwatch = swatchContainer.querySelector('.selected'); if (name && selectedSwatch && onConfirmCreateCallback) { const color = selectedSwatch.dataset.color || selectedSwatch.querySelector('input[type="color"]').value; onConfirmCreateCallback(name, color); } hideCreateNoteModal(); });
         copyNoteBtn.addEventListener('click', () => { if (!currentPageId) return; const textToCopy = editor.innerText; navigator.clipboard.writeText(textToCopy).then(() => { const originalTitle = copyNoteBtn.title; const originalIcon = copyNoteBtn.innerHTML; copyNoteBtn.title = 'Copiato!'; copyNoteBtn.innerHTML = `<i class="fas fa-check"></i>`; copyNoteBtn.classList.add('copied'); setTimeout(() => { copyNoteBtn.title = originalTitle; copyNoteBtn.innerHTML = originalIcon; copyNoteBtn.classList.remove('copied'); }, 2000); }).catch(err => { console.error('Errore copia:', err); alert('Impossibile copiare.'); }); });
         cancelBtn.addEventListener('click', hideCreateNoteModal); modalOverlay.addEventListener('click', (e) => { if(e.target === modalOverlay) hideCreateNoteModal(); });
+        fontSizeSelect.addEventListener('change', () => applyFontSize(fontSizeSelect.value));
+        document.getElementById('editor-toolbar').addEventListener('click', e => { const button = e.target.closest('button'); if (!button) return; const command = button.dataset.command; if (command) { document.execCommand(command, false, null); editor.focus(); } });
+        document.addEventListener('selectionchange', () => { if (document.activeElement === editor) updateToolbarState(); });
         editor.addEventListener('input', () => { if(currentPageId){const{page}=findPage(currentPageId);if(page)page.content=editor.innerHTML;saveData();}});
         document.getElementById('page-bg-color-picker').addEventListener('input', e => { if(currentPageId){const{page}=findPage(currentPageId);if(page){page.backgroundColor=e.target.value;editor.style.setProperty('--page-background-color', e.target.value);saveData();}}});
+        
         loadData();
         render();
     });
