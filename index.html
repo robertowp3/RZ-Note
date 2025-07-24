@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* CSS Invariato rispetto alla versione precedente */
+        /* CSS Invariato */
         :root {
             --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             --bg-primary: #fdfdfd; --bg-secondary: #f4f4f5; --bg-tertiary: #e9e9ed; --bg-header: #2c3e50;
@@ -141,8 +141,10 @@
             </div>
         </div>
     </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // ... Logica del tema invariata ...
         const themeToggle = document.getElementById('theme-toggle');
         const body = document.body;
         const applyTheme = (theme) => { theme === 'dark' ? body.classList.add('dark-mode') : body.classList.remove('dark-mode'); };
@@ -150,7 +152,7 @@
         themeToggle.addEventListener('click', toggleTheme);
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) { applyTheme(savedTheme); } else { const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; applyTheme(prefersDark ? 'dark' : 'light'); }
-
+        
         let data = { notes: [] }; let currentPageId = null;
         const noteList = document.getElementById('note-list'); const editor = document.getElementById('editor'); const welcomeMessage = document.getElementById('welcome-message');
         const formatBlockSelect = document.getElementById('format-block-select'); const fontSizeSelect = document.getElementById('font-size-select');
@@ -167,29 +169,13 @@
             pages.forEach(page => {
                 const hasSubPages = page.subPages && page.subPages.length > 0;
                 if (page.isCollapsed === undefined) page.isCollapsed = false;
-                const pageContainer = document.createElement('li');
-                const pageEl = document.createElement('div');
-                pageEl.className = 'page'; pageEl.dataset.pageId = page.id;
+                const pageContainer = document.createElement('li'); const pageEl = document.createElement('div'); pageEl.className = 'page'; pageEl.dataset.pageId = page.id;
                 pageEl.style.setProperty('--page-color', page.color);
                 if (page.id === currentPageId) pageEl.classList.add('active');
                 const collapseToggleHTML = hasSubPages ? `<span class="collapse-toggle ${page.isCollapsed ? 'collapsed' : ''}"><i class="fas fa-chevron-down"></i></span>` : `<span class="collapse-placeholder"></span>`;
-                pageEl.innerHTML = `
-                    ${collapseToggleHTML}
-                    <span class="page-name">${page.name}</span>
-                    <div class="page-controls">
-                        <button class="rename-btn" title="Rinomina"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="add-sibling-btn" title="Aggiungi nota qui"><i class="fas fa-plus-circle"></i></button>
-                        <button class="add-subpage-btn" title="Aggiungi sotto-nota"><i class="fas fa-sitemap"></i></button>
-                        <input type="color" class="page-color-picker" value="${page.color}" title="Cambia colore">
-                        <button class="delete-btn delete-page-btn" title="Cancella"><i class="fas fa-trash"></i></button>
-                    </div>`;
+                pageEl.innerHTML = `<${collapseToggleHTML}<span class="page-name">${page.name}</span><div class="page-controls"><button class="rename-btn" title="Rinomina"><i class="fas fa-pencil-alt"></i></button><button class="add-sibling-btn" title="Aggiungi nota qui"><i class="fas fa-plus-circle"></i></button><button class="add-subpage-btn" title="Aggiungi sotto-nota"><i class="fas fa-sitemap"></i></button><input type="color" class="page-color-picker" value="${page.color}" title="Cambia colore"><button class="delete-btn delete-page-btn" title="Cancella"><i class="fas fa-trash"></i></button></div>`;
                 pageContainer.appendChild(pageEl);
-                if (hasSubPages && !page.isCollapsed) {
-                    const subPageListEl = document.createElement('ul');
-                    subPageListEl.className = 'subpage-list';
-                    pageContainer.appendChild(subPageListEl);
-                    renderPagesRecursive(page.subPages, subPageListEl);
-                }
+                if (hasSubPages && !page.isCollapsed) { const subPageListEl = document.createElement('ul'); subPageListEl.className = 'subpage-list'; pageContainer.appendChild(subPageListEl); renderPagesRecursive(page.subPages, subPageListEl); }
                 parentElement.appendChild(pageContainer);
             });
         };
@@ -197,18 +183,33 @@
         const showWelcomeMessage = () => { document.getElementById('page-view').classList.add('hidden'); welcomeMessage.classList.remove('hidden'); };
         const findPage = (pageId, pages = data.notes) => { for (const page of pages) { if (page.id === pageId) return { page, parentList: pages }; if (page.subPages) { const found = findPage(pageId, page.subPages); if (found.page) return found; } } return { page: null, parentList: null }; };
         
-        // NUOVO: Funzione corretta e robusta per applicare la dimensione del font
+        // NUOVA VERSIONE CORRETTA
         const applyFontSize = (size) => {
             editor.focus();
             const selection = window.getSelection();
-            if (selection.rangeCount > 0 && !selection.isCollapsed) {
-                const selectedText = selection.toString();
-                const newHtml = `<span style="font-size: ${size};">${selectedText}</span>`;
-                document.execCommand('insertHTML', false, newHtml);
-            }
+            if (!selection.rangeCount || selection.isCollapsed) return;
+
+            // 1. Estrae il contenuto selezionato come frammento HTML
+            const range = selection.getRangeAt(0);
+            const selectedFragment = range.cloneContents();
+            
+            // 2. Converte il frammento in una stringa HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.appendChild(selectedFragment);
+            const selectedHtml = tempDiv.innerHTML;
+
+            // Se non c'è HTML (selezione strana), non fare nulla
+            if (!selectedHtml) return;
+
+            // 3. Crea il nuovo blocco HTML avvolgendo quello vecchio
+            const newHtml = `<span style="font-size: ${size};">${selectedHtml}</span>`;
+
+            // 4. Sostituisce la selezione con il nuovo blocco HTML
+            document.execCommand('insertHTML', false, newHtml);
         };
 
         const updateToolbarState = () => {
+            // ... logica invariata ...
             let parentNode = document.getSelection().anchorNode; if (!parentNode) return;
             if (parentNode.nodeType !== Node.ELEMENT_NODE) { parentNode = parentNode.parentNode; }
             let formatFound = false, fontSizeFound = false;
@@ -221,6 +222,7 @@
             if (!formatFound) formatBlockSelect.value = 'p'; if (!fontSizeFound) fontSizeSelect.value = '10px';
         };
         const showCreateNoteModal = (callback, options = {}) => {
+            // ... logica invariata ...
             onConfirmCreateCallback = callback; modalInput.value = ''; swatchContainer.innerHTML = '';
             const defaultColor = options.defaultColor || PRESET_COLORS[0]; const isPreset = PRESET_COLORS.includes(defaultColor);
             PRESET_COLORS.forEach(color => { const swatch = document.createElement('div'); swatch.className = 'color-swatch'; swatch.style.backgroundColor = color; swatch.dataset.color = color; if (color === defaultColor) swatch.classList.add('selected'); swatchContainer.appendChild(swatch); });
@@ -230,6 +232,7 @@
         };
         const hideCreateNoteModal = () => { modalOverlay.classList.add('hidden'); onConfirmCreateCallback = null; };
         
+        // ... Il resto del codice JS è invariato e corretto ...
         document.getElementById('add-note-trigger').addEventListener('click', () => { showCreateNoteModal((name, color) => { const newPage = { id: `page_${Date.now()}`, name, color, backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; data.notes.push(newPage); currentPageId = newPage.id; render(); }); });
         noteList.addEventListener('click', e => {
             const pageEl = e.target.closest('.page'); if (!pageEl) return;
