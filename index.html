@@ -44,7 +44,6 @@
             display: flex;
             align-items: center;
             padding: 12px 15px;
-            /* Il cursore di default qui, non più 'grab' */
             cursor: pointer;
             border-radius: 6px;
             position: relative;
@@ -86,7 +85,6 @@
             text-overflow: ellipsis; 
             white-space: nowrap; 
             padding: 0 5px; 
-            /* MODIFICA: Il cursore per il drag è solo sul nome */
             cursor: grab;
         }
 
@@ -235,6 +233,8 @@
         const confirmBtn = document.getElementById('confirm-create-note-btn');
         const cancelBtn = document.getElementById('cancel-create-note-btn');
         const copyNoteBtn = document.getElementById('copy-note-btn');
+        // MODIFICA: Aggiunta costante per il bottone di backup
+        const backupBtn = document.getElementById('backup-btn');
         const PRESET_COLORS = [ '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2', '#0288d1', '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d', '#ffa000', '#f57c00', '#e64a19', '#6d4c41' ];
         let onConfirmCreateCallback = null;
         
@@ -307,7 +307,6 @@
                     animation: 150,
                     ghostClass: 'sortable-ghost',
                     dragClass: 'sortable-drag',
-                    // MODIFICA: La maniglia è solo il nome della nota
                     handle: '.page-name', 
                     onEnd: handleDropEvent,
                 });
@@ -330,7 +329,7 @@
             } else {
                 const parentItemId = targetListEl.closest('li').dataset.pageId;
                 const { page: newParentPage } = findPage(parentItemId);
-                if (!newParentPage) return;
+                if (!newParentPage) return; 
                 if (!newParentPage.subPages) {
                     newParentPage.subPages = [];
                 }
@@ -345,7 +344,7 @@
         const saveSelection = () => { const selection = window.getSelection(); if (selection.rangeCount > 0) { const range = selection.getRangeAt(0); if (editor.contains(range.commonAncestorContainer)) { savedRange = range.cloneRange(); } } };
         editor.addEventListener('mouseup', saveSelection); editor.addEventListener('keyup', saveSelection); editor.addEventListener('focus', saveSelection); document.addEventListener('selectionchange', saveSelection);
         
-        const showCreateNoteModal = (callback, options = {}) => { const config = { title: 'Crea Nuova Nota', confirmText: 'Crea', showNameInput: true, defaultColor: PRESET_COLORS[0], ...options }; onConfirmCreateCallback = callback; modal.querySelector('h3').textContent = config.title; confirmBtn.textContent = config.confirmText; modalInput.style.display = config.showNameInput ? 'block' : 'none'; modalInputLabel.style.display = config.showNameInput ? 'block' : 'none'; if(config.showNameInput){ modalInputLabel.textContent = "Nome della nota:"; modalInput.value = ''; } else { modalInputLabel.textContent = "Scegli un colore:"; } swatchContainer.innerHTML = ''; const isPreset = PRESET_COLORS.includes(config.defaultColor); PRESET_COLORS.forEach(color => {  const swatch = document.createElement('div');  swatch.className = 'color-swatch';  swatch.style.backgroundColor = color;  swatch.dataset.color = color;  if (color === config.defaultColor) swatch.classList.add('selected');  swatchContainer.appendChild(swatch);  }); const customSwatch = document.createElement('div');  customSwatch.className = 'color-swatch custom-color-swatch';  if (!isPreset) customSwatch.classList.add('selected'); const customInput = document.createElement('input');  customInput.type = 'color';  customInput.value = config.defaultColor;  customSwatch.appendChild(customInput);  swatchContainer.appendChild(customSwatch); modalOverlay.classList.remove('hidden');  if(config.showNameInput) modalInput.focus(); };
+        const showCreateNoteModal = (callback, options = {}) => { const config = { title: 'Crea Nuova Nota', confirmText: 'Crea', showNameInput: true, defaultColor: PRESET_COLORS[0], ...options }; onConfirmCreateCallback = callback; modal.querySelector('h3').textContent = config.title; confirmBtn.textContent = config.confirmText; modalInput.style.display = config.showNameInput ? 'block' : 'none'; modalInputLabel.style.display = config.showNameInput ? 'block' : 'none'; if(config.showNameInput){ modalInputLabel.textContent = "Nome della nota:"; modalInput.value = ''; } else { modalInputLabel.textContent = "Scegli un colore:"; } swatchContainer.innerHTML = ''; const isPreset = PRESET_COLORS.includes(config.defaultColor); PRESET_COLORS.forEach(color => {  const swatch = document.createElement('div');  swatch.className = 'color-swatch';  swatch.style.backgroundColor = color;  swatch.dataset.color = color;  if (color === config.defaultColor) swatch.classList.add('selected');  swatchContainer.appendChild(swatch);  }); const customSwatch = document.createElement('div');  customSwatch.className = 'color-swatch custom-color-swatch';  if (!isPreset) customSwatch.classList.add('selected'); const customInput = document.createElement('input');  customInput.type = 'color';  customInput.value = config.defaultColor;  customSwatch.appendChild(customInput);  swatchContainer.appendChild(customInput); modalOverlay.classList.remove('hidden');  if(config.showNameInput) modalInput.focus(); };
         const hideCreateNoteModal = () => { modalOverlay.classList.add('hidden'); onConfirmCreateCallback = null; };
         
         document.getElementById('add-note-trigger').addEventListener('click', () => { showCreateNoteModal((name, color) => { const newPage = { id: `page_${Date.now()}`, name, color, backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; data.notes.push(newPage); currentPageId = newPage.id; render(); }); });
@@ -353,7 +352,6 @@
         noteList.addEventListener('click', e => {
             const pageEl = e.target.closest('.page'); 
             if (!pageEl) return;
-            // L'ID è sul contenitore 'li', non più sul 'div.page'
             const pageId = pageEl.closest('li').dataset.pageId;
             if (!pageId) return;
 
@@ -366,6 +364,32 @@
             else { currentPageId = pageId; render(); }
         });
         
+        // MODIFICA: Aggiunto Event Listener per il backup
+        backupBtn.addEventListener('click', () => {
+            if (!data || !data.notes || data.notes.length === 0) {
+                alert("Non ci sono note da salvare nel backup.");
+                return;
+            }
+            try {
+                const backupData = JSON.stringify(data, null, 2); // Formatta il JSON per renderlo leggibile
+                const blob = new Blob([backupData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                
+                const date = new Date().toISOString().slice(0, 10); // Formato YYYY-MM-DD
+                a.download = `rz-note-backup-${date}.json`;
+                a.href = url;
+
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error("Errore durante la creazione del backup:", error);
+                alert("Si è verificato un errore durante la creazione del backup.");
+            }
+        });
+
         confirmBtn.addEventListener('click', () => {  const selectedSwatch = swatchContainer.querySelector('.selected');  if (!selectedSwatch || !onConfirmCreateCallback) { hideCreateNoteModal(); return; } const color = selectedSwatch.dataset.color || selectedSwatch.querySelector('input[type="color"]').value; if (modalInput.style.display !== 'none') { const name = modalInput.value.trim(); if (name) { onConfirmCreateCallback(name, color); } } else { onConfirmCreateCallback(color); } hideCreateNoteModal();  });
         
         copyNoteBtn.addEventListener('click', () => { if (!currentPageId) return; const textToCopy = editor.innerText; navigator.clipboard.writeText(textToCopy).then(() => { const originalTitle = copyNoteBtn.title; const originalIcon = copyNoteBtn.innerHTML; copyNoteBtn.title = 'Copiato!'; copyNoteBtn.innerHTML = `<i class="fas fa-check"></i>`; copyNoteBtn.classList.add('copied'); setTimeout(() => { copyNoteBtn.title = originalTitle; copyNoteBtn.innerHTML = originalIcon; copyNoteBtn.classList.remove('copied'); }, 2000); }).catch(err => { console.error('Errore copia:', err); alert('Impossibile copiare.'); }); });
