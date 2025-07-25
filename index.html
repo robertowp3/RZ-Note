@@ -22,9 +22,7 @@
         }
         body { font-family: var(--font-main); margin: 0; padding: 0; color: var(--text-primary); background-color: var(--bg-secondary); overflow: hidden; transition: background-color 0.3s, color 0.3s; }
         
-        /* MODIFICA: Header nero */
         #app-header { display: flex; align-items: center; justify-content: space-between; height: 50px; background-color: black; color: white; padding: 0 20px; }
-        
         #app-header h1 { margin: 0; font-size: 1.4em; letter-spacing: 1px; font-weight: 600; }
         #theme-toggle { background: none; border: none; color: white; font-size: 1.2em; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; transition: background-color 0.2s; }
         #theme-toggle:hover { background-color: rgba(255, 255, 255, 0.1); }
@@ -33,44 +31,64 @@
         body.dark-mode .fa-sun { display: inline-block; }
         #app-container { display: flex; height: calc(100vh - 50px); }
         
-        /* MODIFICA: Sidebar nera con testo bianco */
-        #sidebar { width: 320px; min-width: 280px; background-color: black; border-right: 1px solid #333; display: flex; flex-direction: column; color: white; }
-        
-        /* MODIFICA: Stili interni alla sidebar per coerenza */
-        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #333; }
+        #sidebar { width: 320px; min-width: 280px; background-color: #282828; border-right: 1px solid #444; display: flex; flex-direction: column; color: #f0f0f0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #444; }
         .sidebar-header h2 { margin: 0; font-size: 1.1em; cursor: pointer; font-weight: 600; width: 100%; display: flex; justify-content: space-between; align-items: center; }
         .add-icon { font-size: 1.2em; color: var(--accent-primary); transition: transform 0.3s ease, color 0.3s; }
         .sidebar-header h2:hover .add-icon { transform: scale(1.1) rotate(90deg); }
         #note-list { flex-grow: 1; overflow-y: auto; padding: 10px; list-style: none; }
         .subpage-list { list-style: none; padding-left: 20px; }
-        .page { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; border-left: 4px solid var(--page-color, var(--accent-primary)); background-color: transparent; margin-bottom: 4px; border-radius: 6px; position: relative; transition: background-color 0.2s, box-shadow 0.2s; }
         
-        /* MODIFICA: Stile hover per sidebar nera */
-        .page:hover { background-color: #252525; }
-        /* MODIFICA: Stile pagina attiva per sidebar nera */
-        .page.active { background-color: #333; box-shadow: 0 2px 8px var(--shadow-color); font-weight: 600; color: var(--accent-primary); }
+        /* === MODIFICHE CHIAVE INIZIO === */
+        .page {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            position: relative;
+            /* L'intero sfondo prende il colore della nota, con un fallback */
+            background-color: var(--page-color, var(--accent-primary));
+            /* Il testo è bianco per contrasto */
+            color: white;
+            transition: filter 0.2s, box-shadow 0.2s;
+        }
+
+        /* Effetto hover: scurisce leggermente il colore di sfondo */
+        .page:hover {
+            filter: brightness(85%);
+        }
+
+        /* Effetto active: aggiunge un bordo interno bianco per evidenziare */
+        .page.active {
+            font-weight: 600;
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.9);
+            filter: brightness(100%); /* Rimuove l'effetto scuro se è anche in hover */
+        }
+        /* === MODIFICHE CHIAVE FINE === */
         
         .page .page-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 5px; }
         
-        /* MODIFICA: Colore frecce per visibilità su sfondo nero */
-        .collapse-toggle { width: 20px; text-align: center; cursor: pointer; color: #bbb; transition: transform 0.2s ease-in-out; }
-        
+        /* Colore frecce e controlli per visibilità su sfondi colorati */
+        .collapse-toggle, .page-controls button {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .collapse-toggle:hover, .page-controls button:hover {
+            color: white;
+        }
+
         .collapse-toggle.collapsed { transform: rotate(-90deg); }
         .collapse-placeholder { width: 20px; }
         .page-controls { display: flex; align-items: center; margin-left: auto; padding-left: 5px; opacity: 0; transition: opacity 0.2s ease-in-out; }
         .page:hover .page-controls, .page.active .page-controls { opacity: 1; }
-        
-        /* MODIFICA: Colore icone controlli per visibilità su sfondo nero */
-        .page-controls button { background: none; border: none; cursor: pointer; color: #bbb; font-size: 0.9em; padding: 4px; }
-        .page-controls button:hover { color: white; }
-        
+        .page-controls button { background: none; border: none; cursor: pointer; font-size: 0.9em; padding: 4px; }
         .page-controls input[type="color"] { width: 18px; height: 18px; border: none; padding: 0; background: none; cursor: pointer; }
         .delete-btn { color: var(--danger-primary) !important; }
         
-        /* MODIFICA: Stile footer della sidebar per coerenza */
-        .sidebar-footer { padding: 15px; border-top: 1px solid #333; display: flex; gap: 10px; }
-        .sidebar-footer button, .import-label { flex: 1; padding: 10px; border: 1px solid #444; border-radius: 6px; background-color: #252525; color: white; cursor: pointer; text-align: center; font-weight: 500; transition: background-color 0.2s; }
-        .sidebar-footer button:hover, .import-label:hover { background-color: #333; }
+        .sidebar-footer { padding: 15px; border-top: 1px solid #444; display: flex; gap: 10px; }
+        .sidebar-footer button, .import-label { flex: 1; padding: 10px; border: 1px solid #555; border-radius: 6px; background-color: #3a3a3a; color: white; cursor: pointer; text-align: center; font-weight: 500; transition: background-color 0.2s; }
+        .sidebar-footer button:hover, .import-label:hover { background-color: #454545; }
         
         /* CSS per il resto della pagina (invariato) */
         #main-content { flex-grow: 1; display: flex; flex-direction: column; background-color: var(--bg-primary); }
@@ -110,7 +128,7 @@
     </style>
 </head>
 <body>
-    <!-- HTML è rimasto invariato -->
+    <!-- HTML e SCRIPT sono rimasti invariati -->
     <header id="app-header">
         <h1>RZ Note</h1>
         <button id="theme-toggle" title="Cambia tema"><i class="fas fa-moon"></i><i class="fas fa-sun"></i></button>
