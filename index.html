@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* CSS Invariato */
+        /* CSS è invariato rispetto alla versione precedente */
         :root {
             --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             --bg-primary: #fdfdfd; --bg-secondary: #f4f4f5; --bg-tertiary: #e9e9ed; --bg-header: #2c3e50;
@@ -39,7 +39,6 @@
         #note-list { flex-grow: 1; overflow-y: auto; padding: 10px; list-style: none; }
         .subpage-list { list-style: none; padding-left: 20px; }
         
-        /* === MODIFICHE CHIAVE INIZIO === */
         .page {
             display: flex;
             align-items: center;
@@ -48,29 +47,23 @@
             margin-bottom: 4px;
             border-radius: 6px;
             position: relative;
-            /* L'intero sfondo prende il colore della nota, con un fallback */
             background-color: var(--page-color, var(--accent-primary));
-            /* Il testo è bianco per contrasto */
             color: white;
             transition: filter 0.2s, box-shadow 0.2s;
         }
 
-        /* Effetto hover: scurisce leggermente il colore di sfondo */
         .page:hover {
             filter: brightness(85%);
         }
 
-        /* Effetto active: aggiunge un bordo interno bianco per evidenziare */
         .page.active {
             font-weight: 600;
             box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.9);
-            filter: brightness(100%); /* Rimuove l'effetto scuro se è anche in hover */
+            filter: brightness(100%);
         }
-        /* === MODIFICHE CHIAVE FINE === */
         
         .page .page-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 5px; }
         
-        /* Colore frecce e controlli per visibilità su sfondi colorati */
         .collapse-toggle, .page-controls button {
             color: rgba(255, 255, 255, 0.7);
         }
@@ -90,7 +83,6 @@
         .sidebar-footer button, .import-label { flex: 1; padding: 10px; border: 1px solid #555; border-radius: 6px; background-color: #3a3a3a; color: white; cursor: pointer; text-align: center; font-weight: 500; transition: background-color 0.2s; }
         .sidebar-footer button:hover, .import-label:hover { background-color: #454545; }
         
-        /* CSS per il resto della pagina (invariato) */
         #main-content { flex-grow: 1; display: flex; flex-direction: column; background-color: var(--bg-primary); }
         #page-view { display: flex; flex-direction: column; height: 100%; }
         #page-header { padding: 10px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
@@ -128,7 +120,7 @@
     </style>
 </head>
 <body>
-    <!-- HTML e SCRIPT sono rimasti invariati -->
+    <!-- L'HTML è rimasto invariato -->
     <header id="app-header">
         <h1>RZ Note</h1>
         <button id="theme-toggle" title="Cambia tema"><i class="fas fa-moon"></i><i class="fas fa-sun"></i></button>
@@ -182,7 +174,6 @@
         </div>
     </div>
     <script>
-    // Lo script Javascript è rimasto invariato
     document.addEventListener('DOMContentLoaded', () => {
         const themeToggle = document.getElementById('theme-toggle');
         const body = document.body;
@@ -198,11 +189,27 @@
         const modalOverlay = document.getElementById('create-note-modal-overlay'); const modalInput = document.getElementById('new-note-name-input');
         const swatchContainer = document.getElementById('color-swatch-container'); const confirmBtn = document.getElementById('confirm-create-note-btn'); const cancelBtn = document.getElementById('cancel-create-note-btn');
         const copyNoteBtn = document.getElementById('copy-note-btn');
-        const PRESET_COLORS = ['#ef9a9a', '#f48fb1', '#ce93d8', '#b39ddb', '#9fa8da', '#90caf9', '#81d4fa', '#80deea', '#a5d6a7', '#c5e1a5', '#e6ee9c', '#fff59d', '#ffe082', '#ffcc80', '#ffab91', '#b0bec5'];
+        const PRESET_COLORS = [ '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2', '#0288d1', '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d', '#ffa000', '#f57c00', '#e64a19', '#6d4c41' ];
         let onConfirmCreateCallback = null;
+        
+        // === NUOVO CODICE INIZIO ===
+        // Aggiungo il gestore di eventi per la selezione del colore nella palette
+        swatchContainer.addEventListener('click', (e) => {
+            const clickedSwatch = e.target.closest('.color-swatch');
+            if (clickedSwatch) {
+                // Rimuovo la selezione da qualsiasi altro swatch
+                const currentSelected = swatchContainer.querySelector('.selected');
+                if (currentSelected) {
+                    currentSelected.classList.remove('selected');
+                }
+                // Aggiungo la selezione allo swatch cliccato
+                clickedSwatch.classList.add('selected');
+            }
+        });
+        // === NUOVO CODICE FINE ===
 
         const saveData = () => localStorage.setItem('webNoteData', JSON.stringify(data));
-        const loadData = () => { const savedData = localStorage.getItem('webNoteData'); if (savedData) { data = JSON.parse(savedData); } else { data = { notes: [{ id: `page_${Date.now()}`, name: "Benvenuto!", color: "#3498db", backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>Interfaccia Moderna!</h1><p>Ora puoi usare anche il tema scuro. Clicca l'icona <i class="fas fa-moon"></i> / <i class="fas fa-sun"></i> in alto a destra.</p><p>Puoi anche aggiungere una nuova nota qui con l'icona <i class="fas fa-plus-circle"></i>.</p>`, subPages: [], isCollapsed: false }] }; } };
+        const loadData = () => { const savedData = localStorage.getItem('webNoteData'); if (savedData) { data = JSON.parse(savedData); } else { data = { notes: [{ id: `page_${Date.now()}`, name: "Benvenuto!", color: "#1976d2", backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>Nuova Palette di Colori!</h1><p>I colori delle note ora sono più vibranti e leggibili. Scegli il tuo preferito quando crei una nuova nota.</p>`, subPages: [], isCollapsed: false }] }; } };
         const render = () => { const scrollPos = noteList.scrollTop; noteList.innerHTML = ''; if (!data.notes || data.notes.length === 0) { showWelcomeMessage(); } else { renderPagesRecursive(data.notes, noteList); } noteList.scrollTop = scrollPos; updateActivePageContent(); saveData(); };
         const renderPagesRecursive = (pages, parentElement) => {
             pages.forEach(page => {
