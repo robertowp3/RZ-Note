@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* CSS è invariato rispetto alla versione precedente */
+        /* CSS Invariato */
         :root {
             --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             --bg-primary: #fdfdfd; --bg-secondary: #f4f4f5; --bg-tertiary: #e9e9ed; --bg-header: #2c3e50;
@@ -63,13 +63,29 @@
         }
         
         .page .page-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 5px; }
-        
+
+        /* === MODIFICA CORRETTA INIZIO === */
+
+        /* Applica l'opacità ai contenitori per l'effetto hover */
         .collapse-toggle, .page-controls button {
-            color: rgba(255, 255, 255, 0.7);
+            opacity: 0.8;
+            transition: opacity 0.2s;
         }
         .collapse-toggle:hover, .page-controls button:hover {
+            opacity: 1;
+        }
+
+        /* Targetizza DIRETTAMENTE le icone (tag <i>) per impostare il colore */
+        .collapse-toggle i,
+        .page-controls button i {
             color: white;
         }
+
+        /* Mantiene il colore rosso per l'icona del cestino */
+        .page-controls .delete-btn i {
+            color: var(--danger-primary) !important;
+        }
+        /* === MODIFICA CORRETTA FINE === */
 
         .collapse-toggle.collapsed { transform: rotate(-90deg); }
         .collapse-placeholder { width: 20px; }
@@ -77,7 +93,6 @@
         .page:hover .page-controls, .page.active .page-controls { opacity: 1; }
         .page-controls button { background: none; border: none; cursor: pointer; font-size: 0.9em; padding: 4px; }
         .page-controls input[type="color"] { width: 18px; height: 18px; border: none; padding: 0; background: none; cursor: pointer; }
-        .delete-btn { color: var(--danger-primary) !important; }
         
         .sidebar-footer { padding: 15px; border-top: 1px solid #444; display: flex; gap: 10px; }
         .sidebar-footer button, .import-label { flex: 1; padding: 10px; border: 1px solid #555; border-radius: 6px; background-color: #3a3a3a; color: white; cursor: pointer; text-align: center; font-weight: 500; transition: background-color 0.2s; }
@@ -120,7 +135,7 @@
     </style>
 </head>
 <body>
-    <!-- L'HTML è rimasto invariato -->
+    <!-- L'HTML e lo SCRIPT sono rimasti invariati -->
     <header id="app-header">
         <h1>RZ Note</h1>
         <button id="theme-toggle" title="Cambia tema"><i class="fas fa-moon"></i><i class="fas fa-sun"></i></button>
@@ -174,6 +189,7 @@
         </div>
     </div>
     <script>
+    // Lo SCRIPT è rimasto invariato
     document.addEventListener('DOMContentLoaded', () => {
         const themeToggle = document.getElementById('theme-toggle');
         const body = document.body;
@@ -192,21 +208,16 @@
         const PRESET_COLORS = [ '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2', '#0288d1', '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d', '#ffa000', '#f57c00', '#e64a19', '#6d4c41' ];
         let onConfirmCreateCallback = null;
         
-        // === NUOVO CODICE INIZIO ===
-        // Aggiungo il gestore di eventi per la selezione del colore nella palette
         swatchContainer.addEventListener('click', (e) => {
             const clickedSwatch = e.target.closest('.color-swatch');
             if (clickedSwatch) {
-                // Rimuovo la selezione da qualsiasi altro swatch
                 const currentSelected = swatchContainer.querySelector('.selected');
                 if (currentSelected) {
                     currentSelected.classList.remove('selected');
                 }
-                // Aggiungo la selezione allo swatch cliccato
                 clickedSwatch.classList.add('selected');
             }
         });
-        // === NUOVO CODICE FINE ===
 
         const saveData = () => localStorage.setItem('webNoteData', JSON.stringify(data));
         const loadData = () => { const savedData = localStorage.getItem('webNoteData'); if (savedData) { data = JSON.parse(savedData); } else { data = { notes: [{ id: `page_${Date.now()}`, name: "Benvenuto!", color: "#1976d2", backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>Nuova Palette di Colori!</h1><p>I colori delle note ora sono più vibranti e leggibili. Scegli il tuo preferito quando crei una nuova nota.</p>`, subPages: [], isCollapsed: false }] }; } };
