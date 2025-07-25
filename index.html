@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RZ Note - Modern UI</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <style>
         /* CSS Invariato */
@@ -43,26 +44,51 @@
             display: flex;
             align-items: center;
             padding: 12px 15px;
+            /* Il cursore di default qui, non più 'grab' */
             cursor: pointer;
-            margin-bottom: 4px;
             border-radius: 6px;
             position: relative;
             background-color: var(--page-color, var(--accent-primary));
             color: white;
             transition: filter 0.2s, box-shadow 0.2s;
         }
+        
+        #note-list li {
+            margin-bottom: 4px;
+        }
 
         .page:hover {
             filter: brightness(85%);
         }
-
         .page.active {
             font-weight: 600;
             box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.9);
             filter: brightness(100%);
         }
         
-        .page .page-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 5px; }
+        .sortable-ghost {
+            background-color: #454545 !important;
+            opacity: 0.7;
+            border: 2px dashed var(--accent-primary);
+        }
+        .sortable-ghost .page {
+            visibility: hidden;
+        }
+        .sortable-drag {
+            opacity: 0.9 !important;
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .page .page-name { 
+            flex-grow: 1; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            white-space: nowrap; 
+            padding: 0 5px; 
+            /* MODIFICA: Il cursore per il drag è solo sul nome */
+            cursor: grab;
+        }
 
         .collapse-toggle, .page-controls button {
             opacity: 0.8;
@@ -83,7 +109,6 @@
         .page:hover .page-controls, .page.active .page-controls { opacity: 1; }
         .page-controls button { background: none; border: none; cursor: pointer; font-size: 0.9em; padding: 4px; }
         
-        /* MODIFICA: Stile per il nuovo pulsante "cambia colore" */
         .change-color-btn {
             width: 20px !important;
             height: 20px !important;
@@ -97,6 +122,7 @@
         .sidebar-footer button, .import-label { flex: 1; padding: 10px; border: 1px solid #555; border-radius: 6px; background-color: #3a3a3a; color: white; cursor: pointer; text-align: center; font-weight: 500; transition: background-color 0.2s; }
         .sidebar-footer button:hover, .import-label:hover { background-color: #454545; }
         
+        /* Stili rimanenti invariati... */
         #main-content { flex-grow: 1; display: flex; flex-direction: column; background-color: var(--bg-primary); }
         #page-view { display: flex; flex-direction: column; height: 100%; }
         #page-header { padding: 10px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
@@ -135,7 +161,7 @@
     </style>
 </head>
 <body>
-    <!-- HTML è rimasto invariato -->
+    <!-- HTML invariato -->
     <header id="app-header">
         <h1>RZ Note</h1>
         <button id="theme-toggle" title="Cambia tema"><i class="fas fa-moon"></i><i class="fas fa-sun"></i></button>
@@ -220,7 +246,6 @@
                     currentSelected.classList.remove('selected');
                 }
                 clickedSwatch.classList.add('selected');
-                // Se c'è un input color, aggiornalo
                 const customInput = swatchContainer.querySelector('.custom-color-swatch input');
                 if(customInput && clickedSwatch.dataset.color){
                     customInput.value = clickedSwatch.dataset.color;
@@ -229,143 +254,110 @@
         });
 
         const saveData = () => localStorage.setItem('webNoteData', JSON.stringify(data));
-        const loadData = () => { const savedData = localStorage.getItem('webNoteData'); if (savedData) { data = JSON.parse(savedData); } else { data = { notes: [{ id: `page_${Date.now()}`, name: "Benvenuto!", color: "#1976d2", backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>Interfaccia Migliorata!</h1><p>Ora puoi cambiare il colore di una nota esistente cliccando sul cerchio colorato nella sidebar.</p>`, subPages: [], isCollapsed: false }] }; } };
-        const render = () => { const scrollPos = noteList.scrollTop; noteList.innerHTML = ''; if (!data.notes || data.notes.length === 0) { showWelcomeMessage(); } else { renderPagesRecursive(data.notes, noteList); } noteList.scrollTop = scrollPos; updateActivePageContent(); saveData(); };
+        const loadData = () => { const savedData = localStorage.getItem('webNoteData'); if (savedData) { data = JSON.parse(savedData); } else { data = { notes: [{ id: `page_${Date.now()}`, name: "Trascina per riordinare!", color: "#1976d2", backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>Drag and Drop!</h1><p>Ora puoi trascinare le note per riordinarle, o per annidarle una dentro l'altra.</p>`, subPages: [], isCollapsed: false }] }; } };
+        
+        const render = () => { 
+            const scrollPos = noteList.scrollTop; 
+            noteList.innerHTML = ''; 
+            if (!data.notes || data.notes.length === 0) { 
+                showWelcomeMessage(); 
+            } else { 
+                renderPagesRecursive(data.notes, noteList); 
+            } 
+            noteList.scrollTop = scrollPos; 
+            initSortable(); 
+            updateActivePageContent(); 
+            saveData(); 
+        };
+
         const renderPagesRecursive = (pages, parentElement) => {
             pages.forEach(page => {
                 const hasSubPages = page.subPages && page.subPages.length > 0;
                 page.isCollapsed = page.isCollapsed === undefined ? false : page.isCollapsed;
-                const pageContainer = document.createElement('li'); const pageEl = document.createElement('div'); pageEl.className = 'page'; pageEl.dataset.pageId = page.id;
+                const pageContainer = document.createElement('li');
+                pageContainer.dataset.pageId = page.id;
+
+                const pageEl = document.createElement('div');
+                pageEl.className = 'page';
                 pageEl.style.setProperty('--page-color', page.color);
                 if (page.id === currentPageId) pageEl.classList.add('active');
+                
                 const collapseToggleHTML = hasSubPages ? `<span class="collapse-toggle ${page.isCollapsed ? 'collapsed' : ''}"><i class="fas fa-chevron-down"></i></span>` : `<span class="collapse-placeholder"></span>`;
-                // MODIFICA: Sostituisco input[type=color] con un pulsante
                 pageEl.innerHTML = `${collapseToggleHTML}<span class="page-name">${page.name}</span><div class="page-controls"><button class="rename-btn" title="Rinomina"><i class="fas fa-pencil-alt"></i></button><button class="add-sibling-btn" title="Aggiungi nota qui"><i class="fas fa-plus-circle"></i></button><button class="add-subpage-btn" title="Aggiungi sotto-nota"><i class="fas fa-sitemap"></i></button><button class="change-color-btn" style="background-color: ${page.color};" title="Cambia colore"></button><button class="delete-btn delete-page-btn" title="Cancella"><i class="fas fa-trash"></i></button></div>`;
+                
                 pageContainer.appendChild(pageEl);
-                if (hasSubPages && !page.isCollapsed) { const subPageListEl = document.createElement('ul'); subPageListEl.className = 'subpage-list'; pageContainer.appendChild(subPageListEl); renderPagesRecursive(page.subPages, subPageListEl); }
+                if (hasSubPages && !page.isCollapsed) {
+                    const subPageListEl = document.createElement('ul');
+                    subPageListEl.className = 'subpage-list';
+                    pageContainer.appendChild(subPageListEl);
+                    renderPagesRecursive(page.subPages, subPageListEl);
+                }
                 parentElement.appendChild(pageContainer);
             });
         };
+
         const updateActivePageContent = () => { const pageView = document.getElementById('page-view'); const pageTitleDisplay = document.getElementById('page-title-display'); const pageBgColorPicker = document.getElementById('page-bg-color-picker'); if (currentPageId) { const { page } = findPage(currentPageId); if (page) { welcomeMessage.classList.add('hidden'); pageView.classList.remove('hidden'); pageTitleDisplay.textContent = page.name; editor.innerHTML = page.content; const defaultBg = body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd'; const bgColor = page.backgroundColor || defaultBg; pageBgColorPicker.value = bgColor; editor.style.setProperty('--page-background-color', bgColor); } else { currentPageId = null; showWelcomeMessage(); } } else showWelcomeMessage(); };
         const showWelcomeMessage = () => { document.getElementById('page-view').classList.add('hidden'); welcomeMessage.classList.remove('hidden'); };
         const findPage = (pageId, pages = data.notes) => { for (const page of pages) { if (page.id === pageId) return { page, parentList: pages }; if (page.subPages) { const found = findPage(pageId, page.subPages); if (found.page) return found; } } return { page: null, parentList: null }; };
         
-        const applyFontSize = (size) => {
-            if (!savedRange) { return; }
-            editor.focus();
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(savedRange);
-            const uniqueId = `temp-font-size-${Date.now()}`;
-            document.execCommand('fontName', false, uniqueId);
-            const fontElements = editor.querySelectorAll(`font[face="${uniqueId}"]`);
-            fontElements.forEach(fontElement => {
-                const span = document.createElement('span');
-                span.style.fontSize = size;
-                while(fontElement.firstChild) {
-                    span.appendChild(fontElement.firstChild);
-                }
-                fontElement.parentNode.replaceChild(span, fontElement);
+        const initSortable = () => {
+            document.querySelectorAll('#note-list, .subpage-list').forEach(list => {
+                new Sortable(list, {
+                    group: 'nested-notes',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    // MODIFICA: La maniglia è solo il nome della nota
+                    handle: '.page-name', 
+                    onEnd: handleDropEvent,
+                });
             });
         };
-        
-        const saveSelection = () => {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                if (editor.contains(range.commonAncestorContainer)) {
-                    savedRange = range.cloneRange();
-                }
-            }
-        };
-        editor.addEventListener('mouseup', saveSelection);
-        editor.addEventListener('keyup', saveSelection);
-        editor.addEventListener('focus', saveSelection);
-        document.addEventListener('selectionchange', saveSelection);
-        
-        // MODIFICA: Funzione modale ora accetta opzioni per essere più flessibile
-        const showCreateNoteModal = (callback, options = {}) => {
-            const config = {
-                title: 'Crea Nuova Nota',
-                confirmText: 'Crea',
-                showNameInput: true,
-                defaultColor: PRESET_COLORS[0],
-                ...options
-            };
-            
-            onConfirmCreateCallback = callback;
-            modal.querySelector('h3').textContent = config.title;
-            confirmBtn.textContent = config.confirmText;
-            
-            modalInput.style.display = config.showNameInput ? 'block' : 'none';
-            modalInputLabel.style.display = config.showNameInput ? 'block' : 'none';
-            modalInputLabel.textContent = "Nome della nota:"
-            
-            if(config.showNameInput){
-                modalInputLabel.textContent = "Nome della nota:";
-                modalInput.value = '';
+
+        const handleDropEvent = (evt) => {
+            const draggedItemId = evt.item.dataset.pageId;
+            const { page: draggedPage, parentList: fromList } = findPage(draggedItemId);
+
+            if (!draggedPage) return;
+
+            fromList.splice(fromList.indexOf(draggedPage), 1);
+
+            const targetListEl = evt.to;
+            let toList;
+
+            if (targetListEl.id === 'note-list') {
+                toList = data.notes;
             } else {
-                 modalInputLabel.textContent = "Scegli un colore:";
+                const parentItemId = targetListEl.closest('li').dataset.pageId;
+                const { page: newParentPage } = findPage(parentItemId);
+                if (!newParentPage) return;
+                if (!newParentPage.subPages) {
+                    newParentPage.subPages = [];
+                }
+                toList = newParentPage.subPages;
             }
 
-            swatchContainer.innerHTML = '';
-            const isPreset = PRESET_COLORS.includes(config.defaultColor);
-            
-            PRESET_COLORS.forEach(color => { 
-                const swatch = document.createElement('div'); 
-                swatch.className = 'color-swatch'; 
-                swatch.style.backgroundColor = color; 
-                swatch.dataset.color = color; 
-                if (color === config.defaultColor) swatch.classList.add('selected'); 
-                swatchContainer.appendChild(swatch); 
-            });
-            const customSwatch = document.createElement('div'); 
-            customSwatch.className = 'color-swatch custom-color-swatch'; 
-            if (!isPreset) customSwatch.classList.add('selected');
-            const customInput = document.createElement('input'); 
-            customInput.type = 'color'; 
-            customInput.value = config.defaultColor; 
-            customSwatch.appendChild(customInput); 
-            swatchContainer.appendChild(customSwatch);
-            
-            modalOverlay.classList.remove('hidden'); 
-            if(config.showNameInput) modalInput.focus();
+            toList.splice(evt.newIndex, 0, draggedPage);
+            render();
         };
+
+        const applyFontSize = (size) => { if (!savedRange) { return; } editor.focus(); const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(savedRange); const uniqueId = `temp-font-size-${Date.now()}`; document.execCommand('fontName', false, uniqueId); const fontElements = editor.querySelectorAll(`font[face="${uniqueId}"]`); fontElements.forEach(fontElement => { const span = document.createElement('span'); span.style.fontSize = size; while(fontElement.firstChild) { span.appendChild(fontElement.firstChild); } fontElement.parentNode.replaceChild(span, fontElement); }); };
+        const saveSelection = () => { const selection = window.getSelection(); if (selection.rangeCount > 0) { const range = selection.getRangeAt(0); if (editor.contains(range.commonAncestorContainer)) { savedRange = range.cloneRange(); } } };
+        editor.addEventListener('mouseup', saveSelection); editor.addEventListener('keyup', saveSelection); editor.addEventListener('focus', saveSelection); document.addEventListener('selectionchange', saveSelection);
+        
+        const showCreateNoteModal = (callback, options = {}) => { const config = { title: 'Crea Nuova Nota', confirmText: 'Crea', showNameInput: true, defaultColor: PRESET_COLORS[0], ...options }; onConfirmCreateCallback = callback; modal.querySelector('h3').textContent = config.title; confirmBtn.textContent = config.confirmText; modalInput.style.display = config.showNameInput ? 'block' : 'none'; modalInputLabel.style.display = config.showNameInput ? 'block' : 'none'; if(config.showNameInput){ modalInputLabel.textContent = "Nome della nota:"; modalInput.value = ''; } else { modalInputLabel.textContent = "Scegli un colore:"; } swatchContainer.innerHTML = ''; const isPreset = PRESET_COLORS.includes(config.defaultColor); PRESET_COLORS.forEach(color => {  const swatch = document.createElement('div');  swatch.className = 'color-swatch';  swatch.style.backgroundColor = color;  swatch.dataset.color = color;  if (color === config.defaultColor) swatch.classList.add('selected');  swatchContainer.appendChild(swatch);  }); const customSwatch = document.createElement('div');  customSwatch.className = 'color-swatch custom-color-swatch';  if (!isPreset) customSwatch.classList.add('selected'); const customInput = document.createElement('input');  customInput.type = 'color';  customInput.value = config.defaultColor;  customSwatch.appendChild(customInput);  swatchContainer.appendChild(customSwatch); modalOverlay.classList.remove('hidden');  if(config.showNameInput) modalInput.focus(); };
         const hideCreateNoteModal = () => { modalOverlay.classList.add('hidden'); onConfirmCreateCallback = null; };
         
-        // La logica di creazione nota ora usa la nuova funzione modale
-        document.getElementById('add-note-trigger').addEventListener('click', () => { 
-            showCreateNoteModal((name, color) => { 
-                const newPage = { id: `page_${Date.now()}`, name, color, backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; 
-                data.notes.push(newPage); 
-                currentPageId = newPage.id; 
-                render(); 
-            }); 
-        });
+        document.getElementById('add-note-trigger').addEventListener('click', () => { showCreateNoteModal((name, color) => { const newPage = { id: `page_${Date.now()}`, name, color, backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; data.notes.push(newPage); currentPageId = newPage.id; render(); }); });
         
         noteList.addEventListener('click', e => {
-            const pageEl = e.target.closest('.page'); if (!pageEl) return;
-            const pageId = pageEl.dataset.pageId;
-            
-            // MODIFICA: Logica per il nuovo pulsante "cambia colore"
-            if (e.target.closest('.change-color-btn')) {
-                e.stopPropagation(); // Impedisce che il click selezioni anche la nota
-                const { page } = findPage(pageId);
-                if (page) {
-                    showCreateNoteModal(
-                        (color) => { // Callback che riceve solo il colore
-                            page.color = color;
-                            render();
-                        },
-                        { // Opzioni per la modale
-                            title: 'Cambia Colore Nota',
-                            confirmText: 'Salva',
-                            showNameInput: false,
-                            defaultColor: page.color
-                        }
-                    );
-                }
-            }
+            const pageEl = e.target.closest('.page'); 
+            if (!pageEl) return;
+            // L'ID è sul contenitore 'li', non più sul 'div.page'
+            const pageId = pageEl.closest('li').dataset.pageId;
+            if (!pageId) return;
+
+            if (e.target.closest('.change-color-btn')) { e.stopPropagation(); const { page } = findPage(pageId); if (page) { showCreateNoteModal( (color) => { page.color = color; render(); }, { title: 'Cambia Colore Nota', confirmText: 'Salva', showNameInput: false, defaultColor: page.color } ); } }
             else if (e.target.closest('.collapse-toggle')) { const { page } = findPage(pageId); if (page) { page.isCollapsed = !page.isCollapsed; render(); } }
             else if (e.target.closest('.rename-btn')) { /* ... */ }
             else if (e.target.closest('.add-sibling-btn')) { const { page: sourcePage, parentList } = findPage(pageId); if (sourcePage && parentList) { showCreateNoteModal((name, color) => { const newPage = { id: `page_${Date.now()}`, name, color, backgroundColor: body.classList.contains('dark-mode') ? '#1e272e' : '#fdfdfd', content: `<h1>${name}</h1>`, subPages: [], isCollapsed: false }; const currentIndex = parentList.findIndex(p => p.id === pageId); parentList.splice(currentIndex + 1, 0, newPage); currentPageId = newPage.id; render(); }, { defaultColor: sourcePage.color }); } }
@@ -374,25 +366,7 @@
             else { currentPageId = pageId; render(); }
         });
         
-        // MODIFICA: La conferma ora gestisce entrambi i casi (creazione e modifica colore)
-        confirmBtn.addEventListener('click', () => { 
-            const selectedSwatch = swatchContainer.querySelector('.selected'); 
-            if (!selectedSwatch || !onConfirmCreateCallback) {
-                hideCreateNoteModal();
-                return;
-            }
-            const color = selectedSwatch.dataset.color || selectedSwatch.querySelector('input[type="color"]').value;
-            
-            if (modalInput.style.display !== 'none') { // Modal in modalità "Crea"
-                const name = modalInput.value.trim();
-                if (name) {
-                    onConfirmCreateCallback(name, color);
-                }
-            } else { // Modal in modalità "Cambia Colore"
-                onConfirmCreateCallback(color);
-            }
-            hideCreateNoteModal(); 
-        });
+        confirmBtn.addEventListener('click', () => {  const selectedSwatch = swatchContainer.querySelector('.selected');  if (!selectedSwatch || !onConfirmCreateCallback) { hideCreateNoteModal(); return; } const color = selectedSwatch.dataset.color || selectedSwatch.querySelector('input[type="color"]').value; if (modalInput.style.display !== 'none') { const name = modalInput.value.trim(); if (name) { onConfirmCreateCallback(name, color); } } else { onConfirmCreateCallback(color); } hideCreateNoteModal();  });
         
         copyNoteBtn.addEventListener('click', () => { if (!currentPageId) return; const textToCopy = editor.innerText; navigator.clipboard.writeText(textToCopy).then(() => { const originalTitle = copyNoteBtn.title; const originalIcon = copyNoteBtn.innerHTML; copyNoteBtn.title = 'Copiato!'; copyNoteBtn.innerHTML = `<i class="fas fa-check"></i>`; copyNoteBtn.classList.add('copied'); setTimeout(() => { copyNoteBtn.title = originalTitle; copyNoteBtn.innerHTML = originalIcon; copyNoteBtn.classList.remove('copied'); }, 2000); }).catch(err => { console.error('Errore copia:', err); alert('Impossibile copiare.'); }); });
         cancelBtn.addEventListener('click', hideCreateNoteModal); modalOverlay.addEventListener('click', (e) => { if(e.target === modalOverlay) hideCreateNoteModal(); });
