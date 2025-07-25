@@ -212,6 +212,8 @@
             </div>
         </div>
     </div>
+    
+    <!-- ======================= INIZIO BLOCCO SCRIPT MODIFICATO ======================= -->
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const themeToggle = document.getElementById('theme-toggle');
@@ -233,8 +235,10 @@
         const confirmBtn = document.getElementById('confirm-create-note-btn');
         const cancelBtn = document.getElementById('cancel-create-note-btn');
         const copyNoteBtn = document.getElementById('copy-note-btn');
-        // MODIFICA: Aggiunta costante per il bottone di backup
         const backupBtn = document.getElementById('backup-btn');
+        // ===== NUOVA COSTANTE PER L'INPUT DI IMPORTAZIONE =====
+        const importInput = document.getElementById('import-input'); 
+        
         const PRESET_COLORS = [ '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2', '#0288d1', '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d', '#ffa000', '#f57c00', '#e64a19', '#6d4c41' ];
         let onConfirmCreateCallback = null;
         
@@ -302,7 +306,8 @@
         
         const initSortable = () => {
             document.querySelectorAll('#note-list, .subpage-list').forEach(list => {
-                new Sortable(list, {
+                if (list.sortable) list.sortable.destroy(); // Distruggi l'istanza precedente se esiste
+                list.sortable = new Sortable(list, {
                     group: 'nested-notes',
                     animation: 150,
                     ghostClass: 'sortable-ghost',
@@ -364,22 +369,19 @@
             else { currentPageId = pageId; render(); }
         });
         
-        // MODIFICA: Aggiunto Event Listener per il backup
         backupBtn.addEventListener('click', () => {
             if (!data || !data.notes || data.notes.length === 0) {
                 alert("Non ci sono note da salvare nel backup.");
                 return;
             }
             try {
-                const backupData = JSON.stringify(data, null, 2); // Formatta il JSON per renderlo leggibile
+                const backupData = JSON.stringify(data, null, 2);
                 const blob = new Blob([backupData], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                
-                const date = new Date().toISOString().slice(0, 10); // Formato YYYY-MM-DD
+                const date = new Date().toISOString().slice(0, 10);
                 a.download = `rz-note-backup-${date}.json`;
                 a.href = url;
-
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -389,6 +391,52 @@
                 alert("Si è verificato un errore durante la creazione del backup.");
             }
         });
+
+        // ===== INIZIO CODICE AGGIUNTO PER L'IMPORTAZIONE =====
+        importInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                return; // Nessun file selezionato
+            }
+
+            if (!confirm("Sei sicuro di voler importare questo backup? Le note attuali verranno sovrascritte.")) {
+                event.target.value = null; // Resetta l'input se l'utente annulla
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                try {
+                    const backupData = JSON.parse(e.target.result);
+                    
+                    // Validazione di base del file di backup
+                    if (backupData && Array.isArray(backupData.notes)) {
+                        data = backupData;
+                        currentPageId = null; // Deseleziona la pagina attiva
+                        render(); // Ri-renderizza l'intera UI con i nuovi dati
+                        alert('Backup ripristinato con successo!');
+                    } else {
+                        throw new Error("Formato del file di backup non valido.");
+                    }
+                } catch (error) {
+                    console.error("Errore durante il ripristino del backup:", error);
+                    alert("Errore: il file di backup non è valido o è corrotto.");
+                } finally {
+                    // Resetta il valore dell'input per permettere di ricaricare lo stesso file
+                    event.target.value = null;
+                }
+            };
+
+            reader.onerror = () => {
+                alert("Impossibile leggere il file selezionato.");
+                event.target.value = null;
+            };
+
+            reader.readAsText(file);
+        });
+        // ===== FINE CODICE AGGIUNTO PER L'IMPORTAZIONE =====
+
 
         confirmBtn.addEventListener('click', () => {  const selectedSwatch = swatchContainer.querySelector('.selected');  if (!selectedSwatch || !onConfirmCreateCallback) { hideCreateNoteModal(); return; } const color = selectedSwatch.dataset.color || selectedSwatch.querySelector('input[type="color"]').value; if (modalInput.style.display !== 'none') { const name = modalInput.value.trim(); if (name) { onConfirmCreateCallback(name, color); } } else { onConfirmCreateCallback(color); } hideCreateNoteModal();  });
         
@@ -407,5 +455,6 @@
         render();
     });
     </script>
+    <!-- ======================= FINE BLOCCO SCRIPT MODIFICATO ======================= -->
 </body>
 </html>
