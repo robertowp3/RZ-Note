@@ -3,64 +3,324 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RZ Note - Versione FINALE Stabile</title>
+    <title>RZ Note - Versione FINALE Stabile (Correzione colori)</title>
+    <!-- Font‑Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SortableJS for drag and drop ordering -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
-        /* Il tuo CSS originale, con piccole aggiunte per il nuovo modal */
-        :root { --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; --bg-primary: #fdfdfd; --bg-secondary: #f4f4f5; --bg-tertiary: #e9e9ed; --bg-header: #2c3e50; --text-primary: #212529; --text-secondary: #5a5a5a; --border-color: #e0e0e0; --accent-primary: #3498db; --accent-primary-faded: #eaf5fc; --danger-primary: #e74c3c; --success-primary: #2ecc71; --shadow-color: rgba(0, 0, 0, 0.05); }
-        body.dark-mode { --bg-primary: #1e272e; --bg-secondary: #2c3a47; --bg-tertiary: #3b4c5a; --bg-header: #12181f; --text-primary: #f1f2f6; --text-secondary: #a4b0be; --border-color: #4a5a6a; --accent-primary-faded: #2c3a47; --shadow-color: rgba(0, 0, 0, 0.15); }
-        body { font-family: var(--font-main); margin: 0; padding: 0; color: var(--text-primary); background-color: var(--bg-secondary); overflow: hidden; }
-        #app-header { display: flex; align-items: center; justify-content: space-between; height: 50px; background-color: black; color: white; padding: 0 20px; }
-        #app-container { display: flex; height: calc(100vh - 50px); }
-        #sidebar { width: 320px; min-width: 280px; background-color: #282828; border-right: 1px solid #444; display: flex; flex-direction: column; color: #f0f0f0; }
-        .sidebar-header { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #444; }
-        .sidebar-header h2 { margin: 0; font-size: 1.1em; cursor: pointer; font-weight: 600; width: 100%; display: flex; justify-content: space-between; align-items: center; }
-        .add-icon { font-size: 1.2em; color: var(--accent-primary); }
-        #note-list { flex-grow: 1; overflow-y: auto; padding: 10px; list-style: none; }
-        #note-list li { margin-bottom: 4px; }
-        .subpage-list { list-style: none; padding-left: 20px; }
-        .page { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; border-radius: 6px; position: relative; background-color: var(--page-color, var(--accent-primary)); color: white; }
-        .page.active { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.9); }
-        .sortable-ghost { opacity: 0.5; background-color: #454545 !important; border: 2px dashed var(--accent-primary); }
-        .sortable-ghost .page { visibility: hidden; }
-        .page .page-name { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px; cursor: grab; }
-        .collapse-toggle { width: 20px; text-align: center; transition: transform 0.2s; }
-        .collapse-toggle.collapsed { transform: rotate(-90deg); }
-        .collapse-placeholder { width: 20px; }
-        .page-controls { display: flex; align-items: center; margin-left: auto; padding-left: 5px; opacity: 0; transition: opacity 0.2s ease-in-out; }
-        .page:hover .page-controls { opacity: 1; }
-        .page-controls button { background: none; border: none; cursor: pointer; color: white; font-size: 0.9em; padding: 4px; }
-        .change-color-btn { width: 20px !important; height: 20px !important; padding: 0 !important; border-radius: 50% !important; border: 2px solid white !important; box-sizing: border-box !important; }
-        .sidebar-footer { padding: 15px; border-top: 1px solid #444; display: flex; gap: 10px; }
-        .sidebar-footer button, .import-label { flex: 1; padding: 10px; border-radius: 6px; background-color: #3a3a3a; color: white; cursor: pointer; text-align: center; border: 1px solid #555; }
-        #main-content { flex-grow: 1; display: flex; flex-direction: column; background-color: var(--bg-primary); }
-        #page-view { display: flex; flex-direction: column; height: 100%; }
-        #page-header { padding: 10px 25px; border-bottom: 1px solid var(--border-color); }
-        #page-header h1 { margin: 0; font-size: 1.6em; font-weight: 700; }
-        #editor { flex-grow: 1; padding: 30px; font-size: 10px; line-height: 1.7; overflow-y: auto; outline: none; }
-        #welcome-message { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center; color: var(--text-secondary); }
-        .hidden { display: none !important; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; justify-content: center; align-items: center; }
-        .modal { background: var(--bg-primary); padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-        .modal-actions button { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; }
-        #new-note-name-input { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border-radius: 6px; border: 1px solid var(--border-color); }
-        #color-swatch-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; }
-        .color-swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; }
-        .color-swatch.selected { border-color: var(--accent-primary); }
-        #merge-target-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; }
-        #merge-target-list li { padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border-color); }
-        #merge-target-list li:last-child { border-bottom: none; }
-        #merge-target-list li:hover { background-color: var(--bg-tertiary); }
-        #merge-target-list li.selected { background-color: var(--accent-primary); color: white; font-weight: bold; }
+        /* Variabili CSS per la modalità chiara/scura e colori base */
+        :root {
+            --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --bg-primary: #fdfdfd;
+            --bg-secondary: #f4f4f5;
+            --bg-tertiary: #e9e9ed;
+            --bg-header: #2c3e50;
+            --text-primary: #212529;
+            --text-secondary: #5a5a5a;
+            --border-color: #e0e0e0;
+            --accent-primary: #3498db;
+            --accent-primary-faded: #eaf5fc;
+            --danger-primary: #e74c3c;
+            --success-primary: #2ecc71;
+            --shadow-color: rgba(0, 0, 0, 0.05);
+        }
+        /* Modalità scura: ridefinisce alcune variabili */
+        body.dark-mode {
+            --bg-primary: #1e272e;
+            --bg-secondary: #2c3a47;
+            --bg-tertiary: #3b4c5a;
+            --bg-header: #12181f;
+            --text-primary: #f1f2f6;
+            --text-secondary: #a4b0be;
+            --border-color: #4a5a6a;
+            --accent-primary-faded: #2c3a47;
+            --shadow-color: rgba(0, 0, 0, 0.15);
+        }
+        /* Stili globali */
+        body {
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 0;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            overflow: hidden;
+        }
+        #app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 50px;
+            background-color: black;
+            color: white;
+            padding: 0 20px;
+        }
+        #app-container {
+            display: flex;
+            height: calc(100vh - 50px);
+        }
+        /* Sidebar */
+        #sidebar {
+            width: 320px;
+            min-width: 280px;
+            background-color: #282828;
+            border-right: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+            color: #f0f0f0;
+        }
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #444;
+        }
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.1em;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .add-icon {
+            font-size: 1.2em;
+            color: var(--accent-primary);
+        }
+        #note-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+            list-style: none;
+        }
+        #note-list li {
+            margin-bottom: 4px;
+        }
+        .subpage-list {
+            list-style: none;
+            padding-left: 20px;
+        }
+        .page {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            position: relative;
+            /* Ogni pagina ha un colore di sfondo diverso, definito tramite variabile CSS personalizzata */
+            background-color: var(--page-color, var(--accent-primary));
+            color: white;
+        }
+        .page.active {
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.9);
+        }
+        .sortable-ghost {
+            opacity: 0.5;
+            background-color: #454545 !important;
+            border: 2px dashed var(--accent-primary);
+        }
+        .sortable-ghost .page {
+            visibility: hidden;
+        }
+        .page .page-name {
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 5px;
+            cursor: grab;
+        }
+        .collapse-toggle {
+            width: 20px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .collapse-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+        .collapse-placeholder {
+            width: 20px;
+        }
+        .page-controls {
+            display: flex;
+            align-items: center;
+            margin-left: auto;
+            padding-left: 5px;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .page:hover .page-controls {
+            opacity: 1;
+        }
+        .page-controls button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: white;
+            font-size: 0.9em;
+            padding: 4px;
+        }
+        .change-color-btn {
+            width: 20px !important;
+            height: 20px !important;
+            padding: 0 !important;
+            border-radius: 50% !important;
+            border: 2px solid white !important;
+            box-sizing: border-box !important;
+        }
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid #444;
+            display: flex;
+            gap: 10px;
+        }
+        .sidebar-footer button,
+        .import-label {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: #3a3a3a;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            border: 1px solid #555;
+        }
+        #main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-primary);
+        }
+        #page-view {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        #page-header {
+            padding: 10px 25px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        #page-header h1 {
+            margin: 0;
+            font-size: 1.6em;
+            font-weight: 700;
+        }
+        #editor {
+            flex-grow: 1;
+            padding: 30px;
+            font-size: 10px;
+            line-height: 1.7;
+            overflow-y: auto;
+            outline: none;
+        }
+        #welcome-message {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        .hidden {
+            display: none !important;
+        }
+        /* Modali */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal {
+            background: var(--bg-primary);
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-actions button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+        #new-note-name-input {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        /* Contenitore palette colori */
+        #color-swatch-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .color-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+        .color-swatch.selected {
+            border-color: var(--accent-primary);
+        }
+        #merge-target-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+        #merge-target-list li {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+        }
+        #merge-target-list li:last-child {
+            border-bottom: none;
+        }
+        #merge-target-list li:hover {
+            background-color: var(--bg-tertiary);
+        }
+        #merge-target-list li.selected {
+            background-color: var(--accent-primary);
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <header id="app-header"><h1>RZ Note</h1></header>
+    <!-- Intestazione dell'applicazione -->
+    <header id="app-header">
+        <h1>RZ Note</h1>
+    </header>
     <div id="app-container">
+        <!-- Barra laterale con elenco note -->
         <aside id="sidebar">
-            <div class="sidebar-header"><h2 id="add-note-trigger">Le tue Note <span class="add-icon">+</span></h2></div>
+            <div class="sidebar-header">
+                <h2 id="add-note-trigger">Le tue Note <span class="add-icon">+</span></h2>
+            </div>
             <ul id="note-list"></ul>
             <div class="sidebar-footer">
                 <button id="backup-btn"><i class="fas fa-download"></i> Backup</button>
@@ -68,35 +328,60 @@
                 <input type="file" id="import-input" accept=".json" style="display: none;">
             </div>
         </aside>
+        <!-- Contenuto principale: vista pagina e messaggio di benvenuto -->
         <main id="main-content">
             <div id="page-view" class="hidden">
                 <div id="page-header"><h1 id="page-title-display"></h1></div>
                 <div id="editor" contenteditable="true"></div>
             </div>
-            <div id="welcome-message"><i class="fas fa-feather-alt" style="font-size: 4em; margin-bottom: 20px;"></i><h1>Benvenuto!</h1></div>
+            <div id="welcome-message">
+                <i class="fas fa-feather-alt" style="font-size: 4em; margin-bottom: 20px;"></i>
+                <h1>Benvenuto!</h1>
+            </div>
         </main>
     </div>
+    <!-- Modale per creare nota -->
     <div id="create-note-modal-overlay" class="modal-overlay hidden">
         <div id="create-note-modal" class="modal">
-            <h3 id="modal-title">Crea Nuova Nota</h3><p id="new-note-name-label" style="margin-bottom: 10px;">Nome della nota:</p><input type="text" id="new-note-name-input" placeholder="Nome della nota..."><div id="color-swatch-container"></div>
-            <div class="modal-actions"><button id="cancel-create-note-btn">Annulla</button><button id="confirm-create-note-btn">Crea</button></div>
+            <h3 id="modal-title">Crea Nuova Nota</h3>
+            <p id="new-note-name-label" style="margin-bottom: 10px;">Nome della nota:</p>
+            <input type="text" id="new-note-name-input" placeholder="Nome della nota...">
+            <div id="color-swatch-container"></div>
+            <div class="modal-actions">
+                <button id="cancel-create-note-btn">Annulla</button>
+                <button id="confirm-create-note-btn">Crea</button>
+            </div>
         </div>
     </div>
+    <!-- Modale per unire note -->
     <div id="merge-modal-overlay" class="modal-overlay hidden">
         <div id="merge-modal" class="modal">
-            <h3>Unisci Nota</h3><p>Unisci "<strong id="merge-source-note-name"></strong>" in:</p><ul id="merge-target-list"></ul>
-            <div class="modal-actions"><button id="cancel-merge-btn">Annulla</button><button id="confirm-merge-btn" disabled>Unisci</button></div>
+            <h3>Unisci Nota</h3>
+            <p>Unisci "<strong id="merge-source-note-name"></strong>" in:</p>
+            <ul id="merge-target-list"></ul>
+            <div class="modal-actions">
+                <button id="cancel-merge-btn">Annulla</button>
+                <button id="confirm-merge-btn" disabled>Unisci</button>
+            </div>
         </div>
     </div>
 
 <script>
+
+// Quando il documento è pronto
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- VARIABILI GLOBALI E COSTANTI ---
     let data = { notes: [] };
     let currentPageId = null;
     let onConfirmCreateCallback = null;
     let mergeSourceId = null;
-    const PRESET_COLORS = [ '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2', '#0288d1', '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d', '#ffa000', '#f57c00', '#e64a19', '#6d4c41' ];
+    // Palette di colori disponibili per le note
+    const PRESET_COLORS = [
+        '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2',
+        '#0288d1', '#0097a7', '#00796b', '#388e3c', '#689f38', '#fbc02d',
+        '#ffa000', '#f57c00', '#e64a19', '#6d4c41'
+    ];
 
     // --- SELETTORI ELEMENTI DOM ---
     const noteList = document.getElementById('note-list');
@@ -104,13 +389,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const createModalOverlay = document.getElementById('create-note-modal-overlay');
     const mergeModalOverlay = document.getElementById('merge-modal-overlay');
 
-    // --- FUNZIONI CORE ---
+    // --- FUNZIONI DI PERSISTENZA ---
     const saveData = () => localStorage.setItem('webNoteFinal', JSON.stringify(data));
     const loadData = () => {
         const savedData = localStorage.getItem('webNoteFinal');
-        data = savedData ? JSON.parse(savedData) : { notes: [{ id: `p1`, name: "Nota Principale", color: "#3498db", content: "<h1>Benvenuto!</h1><p>Trascina per riordinare o annidare.</p>", subPages: [{id: `p2`, name: "Sotto-nota", color: "#2ecc71", content:"Contenuto sotto-nota"}] }, { id: `p3`, name: "Altra Nota", color: "#e74c3c", content: "Contenuto"}] };
+        data = savedData ? JSON.parse(savedData) : {
+            notes: [
+                {
+                    id: 'p1',
+                    name: 'Nota Principale',
+                    color: '#3498db',
+                    content: '<h1>Benvenuto!</h1><p>Trascina per riordinare o annidare.</p>',
+                    subPages: [
+                        { id: 'p2', name: 'Sotto-nota', color: '#2ecc71', content: 'Contenuto sotto-nota' }
+                    ]
+                },
+                {
+                    id: 'p3',
+                    name: 'Altra Nota',
+                    color: '#e74c3c',
+                    content: 'Contenuto'
+                }
+            ]
+        };
     };
-    
+
+    // Trova una pagina (nota) e il suo genitore a partire da un ID
     const findPageAndParent = (pageId, pages = data.notes, parentList = data.notes) => {
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i];
@@ -123,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return { page: null, parentList: null, index: -1 };
     };
 
+    // Renderizza l'elenco delle note e le loro sotto‑note
     const render = () => {
         const scrollPos = noteList.scrollTop;
         noteList.innerHTML = '';
@@ -138,9 +443,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const hasSubPages = page.subPages && page.subPages.length > 0;
             const li = document.createElement('li');
             li.dataset.pageId = page.id;
-
-            const collapseToggleHTML = hasSubPages ? `<span class="collapse-toggle ${page.isCollapsed ? 'collapsed' : ''}"><i class="fas fa-chevron-down"></i></span>` : `<span class="collapse-placeholder"></span>`;
-            
+            const collapseToggleHTML = hasSubPages
+                ? `<span class="collapse-toggle ${page.isCollapsed ? 'collapsed' : ''}"><i class="fas fa-chevron-down"></i></span>`
+                : `<span class="collapse-placeholder"></span>`;
             li.innerHTML = `
                 <div class="page ${page.id === currentPageId ? 'active' : ''}" style="--page-color: ${page.color};">
                     ${collapseToggleHTML}
@@ -155,42 +460,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <ul class="subpage-list"></ul>
             `;
-            
             parentElement.appendChild(li);
-
             if (hasSubPages && !page.isCollapsed) {
                 const sublist = li.querySelector('.subpage-list');
                 renderPagesRecursive(page.subPages, sublist);
             }
         });
     };
-    
+
     const updateActivePageContent = () => {
         const pageView = document.getElementById('page-view');
         const welcomeMessage = document.getElementById('welcome-message');
         const { page: activePage } = findPageAndParent(currentPageId);
         if (!activePage) {
-            pageView.classList.add('hidden'); welcomeMessage.classList.remove('hidden'); return;
+            pageView.classList.add('hidden');
+            welcomeMessage.classList.remove('hidden');
+            return;
         }
-        welcomeMessage.classList.add('hidden'); pageView.classList.remove('hidden');
+        welcomeMessage.classList.add('hidden');
+        pageView.classList.remove('hidden');
         document.getElementById('page-title-display').textContent = activePage.name;
         editor.innerHTML = activePage.content;
     };
 
-    // --- DRAG-AND-DROP ---
+    // --- DRAG‑AND‑DROP ---
     const initSortable = () => {
         document.querySelectorAll('#note-list, .subpage-list').forEach(list => {
             if (list.sortable) list.sortable.destroy();
             list.sortable = new Sortable(list, {
-                group: 'nested-notes', animation: 150, ghostClass: 'sortable-ghost', handle: '.page-name',
+                group: 'nested-notes',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                handle: '.page-name',
                 onEnd: (evt) => {
                     const { item, from, to, oldIndex, newIndex } = evt;
                     const pageId = item.dataset.pageId;
                     const { page, parentList: fromParentList } = findPageAndParent(pageId);
                     if (!page) return;
-
+                    // Rimuove dalla lista originale
                     fromParentList.splice(fromParentList.indexOf(page), 1);
-                    
+                    // Re‑inserisce nella lista destinazione
                     const toParentLi = to.closest('li[data-page-id]');
                     if (toParentLi) {
                         const { page: toParentPage } = findPageAndParent(toParentLi.dataset.pageId);
@@ -207,19 +516,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNZIONI MODALI ---
     const showCreateNoteModal = (callback, options = {}) => {
-        const config = { title: 'Crea Nuova Nota', confirmText: 'Crea', showNameInput: true, defaultColor: PRESET_COLORS[0], ...options };
+        const config = {
+            title: 'Crea Nuova Nota',
+            confirmText: 'Crea',
+            showNameInput: true,
+            defaultColor: PRESET_COLORS[0],
+            ...options
+        };
         onConfirmCreateCallback = callback;
         document.getElementById('modal-title').textContent = config.title;
         document.getElementById('confirm-create-note-btn').textContent = config.confirmText;
         const nameInput = document.getElementById('new-note-name-input');
         nameInput.style.display = config.showNameInput ? 'block' : 'none';
         document.getElementById('new-note-name-label').style.display = config.showNameInput ? 'block' : 'none';
-        if(config.showNameInput) nameInput.value = '';
+        if (config.showNameInput) nameInput.value = '';
+        // Genera la palette di colori
         const swatchContainer = document.getElementById('color-swatch-container');
         swatchContainer.innerHTML = '';
         PRESET_COLORS.forEach(color => {
             const swatch = document.createElement('div');
-            swatch.className = 'color-swatch'; swatch.style.backgroundColor = color; swatch.dataset.color = color;
+            swatch.className = 'color-swatch';
+            swatch.style.backgroundColor = color;
+            swatch.dataset.color = color;
             if (color === config.defaultColor) swatch.classList.add('selected');
             swatchContainer.appendChild(swatch);
         });
@@ -234,18 +552,21 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('merge-source-note-name').textContent = sourceNote.name;
         targetList.innerHTML = '';
         confirmBtn.disabled = true;
-
+        // Appiattisce la struttura a un array
         const allNotesFlat = [];
-        const flatten = (pages) => pages.forEach(p => { allNotesFlat.push(p); if(p.subPages) flatten(p.subPages); });
+        const flatten = (pages) => pages.forEach(p => {
+            allNotesFlat.push(p);
+            if (p.subPages) flatten(p.subPages);
+        });
         flatten(data.notes);
-
         const possibleTargets = allNotesFlat.filter(n => n.id !== sourceNoteId);
         if (possibleTargets.length === 0) {
             targetList.innerHTML = `<li>Nessun'altra nota disponibile.</li>`;
         } else {
             possibleTargets.forEach(targetNote => {
                 const li = document.createElement('li');
-                li.dataset.noteId = targetNote.id; li.textContent = targetNote.name;
+                li.dataset.noteId = targetNote.id;
+                li.textContent = targetNote.name;
                 targetList.appendChild(li);
             });
         }
@@ -259,43 +580,78 @@ document.addEventListener('DOMContentLoaded', () => {
         const pageId = li.dataset.pageId;
         const { page, parentList, index } = findPageAndParent(pageId);
         if (!page) return;
-
         if (e.target.closest('.delete-btn')) {
-            if (confirm(`Cancellare "${page.name}"?`)) { parentList.splice(index, 1); if (currentPageId === pageId) currentPageId = null; render(); }
+            if (confirm(`Cancellare "${page.name}"?`)) {
+                parentList.splice(index, 1);
+                if (currentPageId === pageId) currentPageId = null;
+                render();
+            }
         } else if (e.target.closest('.change-color-btn')) {
-            showCreateNoteModal((color) => { page.color = color; render(); }, { title: 'Cambia Colore', confirmText: 'Salva', showNameInput: false, defaultColor: page.color });
+            showCreateNoteModal((color) => {
+                page.color = color;
+                render();
+            }, { title: 'Cambia Colore', confirmText: 'Salva', showNameInput: false, defaultColor: page.color });
         } else if (e.target.closest('.merge-btn')) {
             showMergeModal(pageId);
         } else if (e.target.closest('.add-subpage-btn')) {
-            showCreateNoteModal((name, color) => { if(!page.subPages) page.subPages = []; const newSubPage = { id: `p${Date.now()}`, name, color, content: `<h1>${name}</h1>` }; page.subPages.push(newSubPage); page.isCollapsed = false; currentPageId = newSubPage.id; render(); }, {defaultColor: page.color});
+            showCreateNoteModal((name, color) => {
+                if (!page.subPages) page.subPages = [];
+                const newSubPage = { id: `p${Date.now()}`, name, color, content: `<h1>${name}</h1>` };
+                page.subPages.push(newSubPage);
+                page.isCollapsed = false;
+                currentPageId = newSubPage.id;
+                render();
+            }, { defaultColor: page.color });
         } else if (e.target.closest('.add-sibling-btn')) {
-            showCreateNoteModal((name, color) => { const newPage = { id: `p${Date.now()}`, name, color, content: `<h1>${name}</h1>` }; parentList.splice(index + 1, 0, newPage); currentPageId = newPage.id; render(); }, {defaultColor: page.color});
+            showCreateNoteModal((name, color) => {
+                const newPage = { id: `p${Date.now()}`, name, color, content: `<h1>${name}</h1>` };
+                parentList.splice(index + 1, 0, newPage);
+                currentPageId = newPage.id;
+                render();
+            }, { defaultColor: page.color });
         } else if (e.target.closest('.collapse-toggle')) {
-            page.isCollapsed = !page.isCollapsed; render();
+            page.isCollapsed = !page.isCollapsed;
+            render();
         } else if (e.target.closest('.page')) {
-            currentPageId = pageId; render();
+            currentPageId = pageId;
+            render();
         }
     });
 
     document.getElementById('add-note-trigger').addEventListener('click', () => {
-        showCreateNoteModal((name, color) => { const newNote = { id: `p${Date.now()}`, name, color, content: `<h1>${name}</h1>` }; data.notes.push(newNote); currentPageId = newNote.id; render(); });
+        showCreateNoteModal((name, color) => {
+            const newNote = { id: `p${Date.now()}`, name, color, content: `<h1>${name}</h1>` };
+            data.notes.push(newNote);
+            currentPageId = newNote.id;
+            render();
+        });
     });
 
+    // Conferma creazione nota (o salvataggio colore)
     document.getElementById('confirm-create-note-btn').addEventListener('click', () => {
         if (!onConfirmCreateCallback) return;
+        // Ottiene il colore selezionato dal cerchio evidenziato
         const color = document.querySelector('#color-swatch-container .selected')?.dataset.color;
         if (!color) return;
         const name = document.getElementById('new-note-name-input').value.trim();
-        if (document.getElementById('new-note-name-input').style.display !== 'none') { if (name) onConfirmCreateCallback(name, color); } else { onConfirmCreateCallback(color); }
+        if (document.getElementById('new-note-name-input').style.display !== 'none') {
+            if (name) onConfirmCreateCallback(name, color);
+        } else {
+            onConfirmCreateCallback(color);
+        }
         createModalOverlay.classList.add('hidden');
     });
-    document.getElementById('cancel-create-note-btn').addEventListener('click', () => createModalOverlay.classList.add('hidden'));
+    document.getElementById('cancel-create-note-btn').addEventListener('click', () => {
+        createModalOverlay.classList.add('hidden');
+    });
 
+    // Gestione selezione bersaglio per unione note
     document.getElementById('merge-target-list').addEventListener('click', (e) => {
         const li = e.target.closest('li[data-note-id]');
         if (!li) return;
         document.querySelectorAll('#merge-target-list li').forEach(el => el.classList.remove('selected'));
-        li.classList.add('selected'); document.getElementById('confirm-merge-btn').disabled = false;
+        li.classList.add('selected');
+        document.getElementById('confirm-merge-btn').disabled = false;
     });
 
     document.getElementById('confirm-merge-btn').addEventListener('click', () => {
@@ -312,16 +668,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         mergeModalOverlay.classList.add('hidden');
     });
-    document.getElementById('cancel-merge-btn').addEventListener('click', () => mergeModalOverlay.classList.add('hidden'));
+    document.getElementById('cancel-merge-btn').addEventListener('click', () => {
+        mergeModalOverlay.classList.add('hidden');
+    });
 
-    editor.addEventListener('input', () => { if (currentPageId) { const {page} = findPageAndParent(currentPageId); if (page) { page.content = editor.innerHTML; saveData(); } } });
-    document.getElementById('backup-btn').addEventListener('click', () => { const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `rz-note-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(a.href); });
-    document.getElementById('import-input').addEventListener('change', (event) => { const file = event.target.files[0]; if (!file || !confirm("Continuare? Le note attuali verranno sovrascritte.")) return; const reader = new FileReader(); reader.onload = (e) => { try { const importedData = JSON.parse(e.target.result); if (importedData && Array.isArray(importedData.notes)) { data = importedData; currentPageId = null; render(); alert('Backup ripristinato!'); } else { throw new Error('File non valido.'); } } catch (err) { alert('Errore: file di backup corrotto.'); } }; reader.readAsText(file); });
+    // Aggiorna contenuto della pagina all'input dell'editor
+    editor.addEventListener('input', () => {
+        if (currentPageId) {
+            const { page } = findPageAndParent(currentPageId);
+            if (page) {
+                page.content = editor.innerHTML;
+                saveData();
+            }
+        }
+    });
 
-    // --- AVVIO INIZIALE ---
+    // Backup e importazione file
+    document.getElementById('backup-btn').addEventListener('click', () => {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `rz-note-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    });
+    document.getElementById('import-input').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file || !confirm('Continuare? Le note attuali verranno sovrascritte.')) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (importedData && Array.isArray(importedData.notes)) {
+                    data = importedData;
+                    currentPageId = null;
+                    render();
+                    alert('Backup ripristinato!');
+                } else {
+                    throw new Error('File non valido.');
+                }
+            } catch (err) {
+                alert('Errore: file di backup corrotto.');
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    // --- INTERAZIONE COLORE: aggiunge selezione ai cerchi palette ---
+    document.getElementById('color-swatch-container').addEventListener('click', (e) => {
+        const swatch = e.target.closest('.color-swatch');
+        if (!swatch) return;
+        // Rimuove la selezione da tutte le palette
+        document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('selected'));
+        // Imposta il cliccato come selezionato
+        swatch.classList.add('selected');
+    });
+
+    // --- AVVIO ---
     loadData();
     render();
 });
+
 </script>
 
 </body>
