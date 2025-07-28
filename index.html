@@ -215,6 +215,48 @@
             overflow-y: auto;
             outline: none;
         }
+
+        /* Barra degli strumenti di formattazione per il testo */
+        #formatting-toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 6px 25px;
+            background-color: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        #formatting-toolbar button {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 1em;
+            padding: 4px 6px;
+            border-radius: 4px;
+        }
+        #formatting-toolbar button:hover {
+            background-color: var(--accent-primary-faded);
+        }
+
+        /* Stili per il selettore di dimensione del testo */
+        #formatting-toolbar select {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 1em;
+            padding: 4px 6px;
+            border-radius: 4px;
+        }
+
+        /* Stili per le immagini inserite nell'editor */
+        #editor img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px 0;
+            /* Consente all'utente di ridimensionare le immagini in alcuni browser */
+            cursor: move;
+        }
         #welcome-message {
             display: flex;
             flex-direction: column;
@@ -331,8 +373,30 @@
         <!-- Contenuto principale: vista pagina e messaggio di benvenuto -->
         <main id="main-content">
             <div id="page-view" class="hidden">
-                <div id="page-header"><h1 id="page-title-display"></h1></div>
-                <div id="editor" contenteditable="true"></div>
+        <div id="page-header"><h1 id="page-title-display"></h1></div>
+        <!-- Barra di formattazione per modificare il contenuto della nota -->
+        <div id="formatting-toolbar">
+            <button data-command="bold" title="Grassetto"><i class="fas fa-bold"></i></button>
+            <button data-command="italic" title="Corsivo"><i class="fas fa-italic"></i></button>
+            <button data-command="underline" title="Sottolineato"><i class="fas fa-underline"></i></button>
+            <button data-command="insertUnorderedList" title="Elenco puntato"><i class="fas fa-list-ul"></i></button>
+            <button data-command="insertOrderedList" title="Elenco numerato"><i class="fas fa-list-ol"></i></button>
+            <!-- Pulsante per copiare tutto il testo della nota -->
+            <button data-command="copy" title="Copia il testo"><i class="fas fa-copy"></i></button>
+            <!-- Pulsante per inserire un link ipertestuale -->
+            <button data-command="createLink" title="Inserisci link"><i class="fas fa-link"></i></button>
+            <!-- Pulsante per inserire un'immagine -->
+            <button data-command="insertImage" title="Inserisci immagine"><i class="fas fa-image"></i></button>
+            <!-- Selettore per la dimensione del testo -->
+            <select id="font-size-select" title="Dimensione testo">
+                <option value="" disabled selected>Dimensione</option>
+                <option value="2">Piccola</option>
+                <option value="3">Normale</option>
+                <option value="4">Grande</option>
+                <option value="5">Molto grande</option>
+            </select>
+        </div>
+        <div id="editor" contenteditable="true"></div>
             </div>
             <div id="welcome-message">
                 <i class="fas fa-feather-alt" style="font-size: 4em; margin-bottom: 20px;"></i>
@@ -365,6 +429,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Input nascosto per il caricamento di immagini (utilizzato dal pulsante Inserisci immagine) -->
+    <input type="file" id="image-input" accept="image/*" style="display:none;">
 
 <script>
 
@@ -722,6 +789,134 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('selected'));
         // Imposta il cliccato come selezionato
         swatch.classList.add('selected');
+    });
+
+    // Barra di formattazione: esegue i comandi sull'editor
+    const toolbar = document.getElementById('formatting-toolbar');
+    if (toolbar) {
+        toolbar.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-command]');
+            if (!btn) return;
+            const command = btn.dataset.command;
+            // Gestione personalizzata di alcuni comandi
+            if (command === 'copy') {
+                // Copia il testo semplice (senza HTML) negli appunti
+                navigator.clipboard.writeText(editor.innerText).then(() => {
+                    console.log('Testo copiato negli appunti');
+                }).catch(err => {
+                    console.error('Errore nella copia:', err);
+                });
+            } else if (command === 'createLink') {
+                // Chiede all'utente l'URL da collegare
+                const url = prompt('Inserisci l\'URL del link:', 'https://');
+                if (url) {
+                    const sel = window.getSelection();
+                    if (sel && !sel.isCollapsed) {
+                        // Se c'è del testo selezionato, usa createLink poi aggiungi target
+                        document.execCommand('createLink', false, url);
+                        // Posticipa la modifica degli attributi per assicurarsi che il link sia stato creato
+                        setTimeout(() => {
+                            // Trova tutti i link creati con questo URL nell'editor e aggiorna gli attributi
+                            editor.querySelectorAll('a[href="' + url + '"]').forEach(anchor => {
+                                anchor.setAttribute('target', '_blank');
+                                anchor.setAttribute('rel', 'noopener noreferrer');
+                            });
+                        }, 0);
+                    } else {
+                        // Nessuna selezione: chiedi il testo del link da inserire
+                        const text = prompt('Testo del link', url);
+                        if (text) {
+                            const html = '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + text + '</a>';
+                            document.execCommand('insertHTML', false, html);
+                        }
+                    }
+                }
+            } else if (command === 'insertImage') {
+                // Quando si clicca sul pulsante immagine, apri l'input file nascosto
+                const imgInput = document.getElementById('image-input');
+                if (imgInput) {
+                    imgInput.click();
+                }
+            } else {
+                // Per gli altri comandi di formattazione usa execCommand
+                document.execCommand(command, false, null);
+            }
+            // Rimette il focus sull'editor per permettere la continua digitazione
+            editor.focus();
+        });
+    }
+
+    // Selezione dimensione del testo: applica dimensione predefinita alla selezione
+    const fontSizeSelect = document.getElementById('font-size-select');
+    if (fontSizeSelect) {
+        fontSizeSelect.addEventListener('change', () => {
+            const size = fontSizeSelect.value;
+            if (!size) return;
+            // Usa execCommand per impostare la dimensione del font (valori 1–7)
+            document.execCommand('fontSize', false, size);
+            // Ripristina il focus sull'editor
+            editor.focus();
+        });
+    }
+
+    // Gestione inserimento immagine tramite file input
+    const imageInput = document.getElementById('image-input');
+    if (imageInput) {
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.type && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const imgHTML = '<img src="' + evt.target.result + '" alt="immagine" />';
+                    // Inserisce l'immagine nella posizione corrente del cursore
+                    document.execCommand('insertHTML', false, imgHTML);
+                    editor.focus();
+                };
+                reader.readAsDataURL(file);
+            }
+            // Reimposta il value dell'input per poter ricaricare la stessa immagine
+            e.target.value = '';
+        });
+    }
+
+    // Gestione drag‑and‑drop di immagini all'interno dell'editor
+    editor.addEventListener('dragover', (e) => {
+        e.preventDefault();
+    });
+    editor.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+            Array.from(files).forEach((file) => {
+                if (file.type && file.type.startsWith('image/')) {
+                    // Posiziona il cursore nel punto di drop
+                    const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+                    if (range) {
+                        const selection = window.getSelection();
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    }
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        const imgHTML = '<img src="' + evt.target.result + '" alt="immagine" />';
+                        document.execCommand('insertHTML', false, imgHTML);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            editor.focus();
+        }
+    });
+
+    // Rende i link cliccabili: intercetta i click sui tag <a> all'interno dell'editor e apre l'URL in una nuova scheda
+    editor.addEventListener('click', (e) => {
+        const anchor = e.target.closest('a');
+        if (anchor) {
+            // Impedisce che l'editor tratti il link come testo da modificare
+            e.preventDefault();
+            // Apre il link in una nuova scheda/finestra
+            window.open(anchor.href, '_blank');
+        }
     });
 
     // --- AVVIO ---
