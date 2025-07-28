@@ -534,6 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="add-subpage-btn" title="Aggiungi sotto-nota"><i class="fas fa-sitemap"></i></button>
                         <button class="merge-btn" title="Unisci con..."><i class="fas fa-compress-alt"></i></button>
                         <button class="change-color-btn" style="background-color: ${page.color};" title="Cambia colore"></button>
+                        <button class="rename-btn" title="Rinomina nota"><i class="fas fa-pencil-alt"></i></button>
                         <button class="delete-btn" title="Cancella"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
@@ -670,6 +671,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 page.color = color;
                 render();
             }, { title: 'Cambia Colore', confirmText: 'Salva', showNameInput: false, defaultColor: page.color });
+        } else if (e.target.closest('.rename-btn')) {
+            // Permette di rinominare la nota tramite un prompt
+            const newName = prompt('Inserisci il nuovo nome della nota:', page.name);
+            if (newName && newName.trim()) {
+                page.name = newName.trim();
+                // Se la nota rinominata è quella attualmente in visualizzazione, aggiorna il titolo della pagina
+                if (currentPageId === page.id) {
+                    document.getElementById('page-title-display').textContent = page.name;
+                }
+                render();
+            }
         } else if (e.target.closest('.merge-btn')) {
             showMergeModal(pageId);
         } else if (e.target.closest('.add-subpage-btn')) {
