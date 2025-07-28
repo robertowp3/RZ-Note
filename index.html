@@ -746,17 +746,40 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('confirm-merge-btn').addEventListener('click', () => {
+        // Aggiunge una nota (con eventuali sotto‑note) come sotto‑nota della destinazione senza rimuoverla dall'elenco originale.
+        // Viene creata una copia profonda della nota sorgente per evitare conflitti di ID e modifiche indesiderate.
         const selectedLi = document.querySelector('#merge-target-list li.selected');
         if (!mergeSourceId || !selectedLi) return;
         const mergeTargetId = selectedLi.dataset.noteId;
-        const { page: sourcePage, parentList, index } = findPageAndParent(mergeSourceId);
+        const { page: sourcePage } = findPageAndParent(mergeSourceId);
         const { page: targetPage } = findPageAndParent(mergeTargetId);
         if (sourcePage && targetPage) {
-            targetPage.content += `<hr style="margin: 20px 0; border: 1px dashed #ccc;">${sourcePage.content}`;
-            parentList.splice(index, 1);
-            if (currentPageId === sourcePage.id) currentPageId = targetPage.id;
+            // Funzione ricorsiva per creare una copia profonda della nota e delle sue sotto‑note, generando nuovi ID univoci
+            const copyPage = (page) => {
+                // genera un ID unico combinando timestamp e numero casuale
+                const newId = 'p' + Date.now().toString() + '_' + Math.random().toString(16).slice(2);
+                const newPage = {
+                    id: newId,
+                    name: page.name,
+                    color: page.color,
+                    content: page.content,
+                };
+                if (page.subPages && Array.isArray(page.subPages)) {
+                    newPage.subPages = page.subPages.map(copyPage);
+                }
+                return newPage;
+            };
+            const pageCopy = copyPage(sourcePage);
+            // Assicura che la nota destinazione abbia un array di subPages
+            if (!targetPage.subPages) targetPage.subPages = [];
+            // Aggiunge la copia della nota (con eventuali sotto-note) come sub‑page della nota destinazione
+            targetPage.subPages.push(pageCopy);
+            // Espande la nota destinazione per mostrare le nuove sotto‑note
+            targetPage.isCollapsed = false;
+            // Re-renderizza l'interfaccia per mostrare la struttura aggiornata. L'ID della pagina corrente rimane invariato.
             render();
         }
+        // Chiude il modale di unione
         mergeModalOverlay.classList.add('hidden');
     });
     document.getElementById('cancel-merge-btn').addEventListener('click', () => {
