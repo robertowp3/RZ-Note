@@ -257,6 +257,11 @@
             /* Consente all'utente di ridimensionare le immagini in alcuni browser */
             cursor: move;
         }
+
+        /* Evidenzia l'immagine selezionata per il ridimensionamento */
+        #editor img.selected-img {
+            outline: 2px dashed var(--accent-primary);
+        }
         #welcome-message {
             display: flex;
             flex-direction: column;
@@ -387,6 +392,11 @@
             <button data-command="createLink" title="Inserisci link"><i class="fas fa-link"></i></button>
             <!-- Pulsante per inserire un'immagine -->
             <button data-command="insertImage" title="Inserisci immagine"><i class="fas fa-image"></i></button>
+            <!-- Pulsanti per ridimensionare l'immagine selezionata -->
+            <button data-command="imgDecrease" title="Riduci immagine"><i class="fas fa-search-minus"></i></button>
+            <button data-command="imgIncrease" title="Ingrandisci immagine"><i class="fas fa-search-plus"></i></button>
+            <!-- Pulsante per impostare una dimensione specifica all'immagine selezionata -->
+            <button data-command="imgSetSize" title="Imposta dimensione immagine"><i class="fas fa-arrows-alt-h"></i></button>
             <!-- Selettore per la dimensione del testo -->
             <select id="font-size-select" title="Dimensione testo">
                 <option value="" disabled selected>Dimensione</option>
@@ -443,6 +453,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPageId = null;
     let onConfirmCreateCallback = null;
     let mergeSourceId = null;
+    // Memorizza l'immagine attualmente selezionata per il ridimensionamento
+    let selectedImage = null;
     // Palette di colori disponibili per le note
     const PRESET_COLORS = [
         '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2',
@@ -837,6 +849,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (imgInput) {
                     imgInput.click();
                 }
+            } else if (command === 'imgIncrease' || command === 'imgDecrease' || command === 'imgSetSize') {
+                // Ridimensiona l'immagine selezionata modificando la larghezza percentuale
+                if (selectedImage) {
+                    if (command === 'imgSetSize') {
+                        // Chiede all'utente la nuova larghezza (es. 50% o 200px)
+                        const currentWidth = selectedImage.style.width || (selectedImage.dataset.size ? selectedImage.dataset.size + '%' : '100%');
+                        const input = prompt('Imposta la larghezza dell\'immagine (ad es. 50% o 200px):', currentWidth);
+                        if (input) {
+                            let value = input.trim();
+                            // Se l'utente ha inserito solo un numero, assumi percentuale
+                            if (/^\d+$/.test(value)) {
+                                value = value + '%';
+                            }
+                            selectedImage.style.width = value;
+                            // Aggiorna il dataset.size se l'unità è in percentuale
+                            if (value.endsWith('%')) {
+                                selectedImage.dataset.size = parseFloat(value);
+                            }
+                        }
+                    } else {
+                        let size = parseFloat(selectedImage.dataset.size) || 100;
+                        if (command === 'imgIncrease') {
+                            size += 10;
+                            if (size > 300) size = 300;
+                        } else if (command === 'imgDecrease') {
+                            size -= 10;
+                            if (size < 10) size = 10;
+                        }
+                        selectedImage.dataset.size = size;
+                        selectedImage.style.width = size + '%';
+                    }
+                }
             } else {
                 // Per gli altri comandi di formattazione usa execCommand
                 document.execCommand(command, false, null);
@@ -867,7 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (file && file.type && file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = function(evt) {
-                    const imgHTML = '<img src="' + evt.target.result + '" alt="immagine" />';
+                    const imgHTML = '<img src="' + evt.target.result + '" alt="immagine" style="width:100%; max-width:100%; height:auto;" data-size="100" />';
                     // Inserisce l'immagine nella posizione corrente del cursore
                     document.execCommand('insertHTML', false, imgHTML);
                     editor.focus();
@@ -898,7 +942,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     const reader = new FileReader();
                     reader.onload = function(evt) {
-                        const imgHTML = '<img src="' + evt.target.result + '" alt="immagine" />';
+                        const imgHTML = '<img src="' + evt.target.result + '" alt="immagine" style="width:100%; max-width:100%; height:auto;" data-size="100" />';
                         document.execCommand('insertHTML', false, imgHTML);
                     };
                     reader.readAsDataURL(file);
@@ -916,6 +960,21 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             // Apre il link in una nuova scheda/finestra
             window.open(anchor.href, '_blank');
+            return;
+        }
+        // Gestione selezione immagine per il ridimensionamento
+        const img = e.target.closest('img');
+        if (img) {
+            // Rimuove la selezione da eventuali altre immagini
+            if (selectedImage && selectedImage !== img) {
+                selectedImage.classList.remove('selected-img');
+            }
+            selectedImage = img;
+            selectedImage.classList.add('selected-img');
+        } else {
+            // Se si clicca fuori da un'immagine, deseleziona quella corrente
+            if (selectedImage) selectedImage.classList.remove('selected-img');
+            selectedImage = null;
         }
     });
 
