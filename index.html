@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RZ Note - Versione FINALE Stabile (Correzione colori)</title>
+    <title>RZ Note - Versione FINALE Stabile (Correzione definitiva)</title>
     <!-- Font‑Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- SortableJS for drag and drop ordering -->
@@ -413,18 +413,12 @@
             <button data-command="underline" title="Sottolineato"><i class="fas fa-underline"></i></button>
             <button data-command="insertUnorderedList" title="Elenco puntato"><i class="fas fa-list-ul"></i></button>
             <button data-command="insertOrderedList" title="Elenco numerato"><i class="fas fa-list-ol"></i></button>
-            <!-- Pulsante per copiare tutto il testo della nota -->
             <button data-command="copy" title="Copia il testo"><i class="fas fa-copy"></i></button>
-            <!-- Pulsante per inserire un link ipertestuale -->
             <button data-command="createLink" title="Inserisci link"><i class="fas fa-link"></i></button>
-            <!-- Pulsante per inserire un'immagine -->
             <button data-command="insertImage" title="Inserisci immagine"><i class="fas fa-image"></i></button>
-            <!-- Pulsanti per ridimensionare l'immagine selezionata -->
             <button data-command="imgDecrease" title="Riduci immagine"><i class="fas fa-search-minus"></i></button>
             <button data-command="imgIncrease" title="Ingrandisci immagine"><i class="fas fa-search-plus"></i></button>
-            <!-- Pulsante per impostare una dimensione specifica all'immagine selezionata -->
             <button data-command="imgSetSize" title="Imposta dimensione immagine"><i class="fas fa-arrows-alt-h"></i></button>
-            <!-- Selettore per la dimensione del testo -->
             <select id="font-size-select" title="Dimensione testo">
                 <option value="" disabled selected>Dimensione</option>
                 <option value="2">Piccola</option>
@@ -480,31 +474,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPageId = null;
     let onConfirmCreateCallback = null;
     let mergeSourceId = null;
-    let selectedImage = null; // Memorizza l'immagine attualmente selezionata
+    let selectedImage = null;
     
-    // --- INIZIO CODICE CORRETTO: Variabile e funzioni per la gestione della selezione ---
+    // --- GESTIONE SELEZIONE TESTO ---
     let savedSelectionRange = null; 
 
-    // Salva l'oggetto "Range" della selezione corrente
     const saveSelection = () => {
         const selection = window.getSelection();
         if (selection.getRangeAt && selection.rangeCount && editor.contains(selection.anchorNode)) {
-             // Salva la selezione solo se è all'interno dell'editor
             savedSelectionRange = selection.getRangeAt(0);
-        } else {
-            savedSelectionRange = null;
         }
     };
 
-    // Ripristina la selezione salvata
     const restoreSelection = () => {
         if (savedSelectionRange) {
+            editor.focus(); // Assicura che l'editor sia attivo
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(savedSelectionRange);
         }
     };
-    // --- FINE CODICE CORRETTO ---
 
     const PRESET_COLORS = [
         '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2',
@@ -517,6 +506,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const editor = document.getElementById('editor');
     const createModalOverlay = document.getElementById('create-note-modal-overlay');
     const mergeModalOverlay = document.getElementById('merge-modal-overlay');
+    const toolbar = document.getElementById('formatting-toolbar');
+    const fontSizeSelect = document.getElementById('font-size-select');
+    const textColorPicker = document.getElementById('text-color-picker');
 
     // --- FUNZIONI DI PERSISTENZA ---
     const saveData = () => localStorage.setItem('webNoteFinal', JSON.stringify(data));
@@ -627,9 +619,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const pageId = item.dataset.pageId;
                     const { page, parentList: fromParentList } = findPageAndParent(pageId);
                     if (!page) return;
-                    // Rimuove dalla lista originale
                     fromParentList.splice(fromParentList.indexOf(page), 1);
-                    // Re‑inserisce nella lista destinazione
                     const toParentLi = to.closest('li[data-page-id]');
                     if (toParentLi) {
                         const { page: toParentPage } = findPageAndParent(toParentLi.dataset.pageId);
@@ -646,13 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNZIONI MODALI ---
     const showCreateNoteModal = (callback, options = {}) => {
-        const config = {
-            title: 'Crea Nuova Nota',
-            confirmText: 'Crea',
-            showNameInput: true,
-            defaultColor: PRESET_COLORS[0],
-            ...options
-        };
+        const config = { title: 'Crea Nuova Nota', confirmText: 'Crea', showNameInput: true, defaultColor: PRESET_COLORS[0], ...options };
         onConfirmCreateCallback = callback;
         document.getElementById('modal-title').textContent = config.title;
         document.getElementById('confirm-create-note-btn').textContent = config.confirmText;
@@ -660,7 +644,6 @@ document.addEventListener('DOMContentLoaded', () => {
         nameInput.style.display = config.showNameInput ? 'block' : 'none';
         document.getElementById('new-note-name-label').style.display = config.showNameInput ? 'block' : 'none';
         if (config.showNameInput) nameInput.value = '';
-        // Genera la palette di colori
         const swatchContainer = document.getElementById('color-swatch-container');
         swatchContainer.innerHTML = '';
         PRESET_COLORS.forEach(color => {
@@ -682,12 +665,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('merge-source-note-name').textContent = sourceNote.name;
         targetList.innerHTML = '';
         confirmBtn.disabled = true;
-        // Appiattisce la struttura a un array
         const allNotesFlat = [];
-        const flatten = (pages) => pages.forEach(p => {
-            allNotesFlat.push(p);
-            if (p.subPages) flatten(p.subPages);
-        });
+        const flatten = (pages) => pages.forEach(p => { allNotesFlat.push(p); if (p.subPages) flatten(p.subPages); });
         flatten(data.notes);
         const possibleTargets = allNotesFlat.filter(n => n.id !== sourceNoteId);
         if (possibleTargets.length === 0) {
@@ -710,6 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pageId = li.dataset.pageId;
         const { page, parentList, index } = findPageAndParent(pageId);
         if (!page) return;
+
         if (e.target.closest('.delete-btn')) {
             if (confirm(`Cancellare "${page.name}"?`)) {
                 parentList.splice(index, 1);
@@ -717,17 +697,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 render();
             }
         } else if (e.target.closest('.change-color-btn')) {
-            showCreateNoteModal((color) => {
-                page.color = color;
-                render();
-            }, { title: 'Cambia Colore', confirmText: 'Salva', showNameInput: false, defaultColor: page.color });
+            showCreateNoteModal((color) => { page.color = color; render(); }, { title: 'Cambia Colore', confirmText: 'Salva', showNameInput: false, defaultColor: page.color });
         } else if (e.target.closest('.rename-btn')) {
             const newName = prompt('Inserisci il nuovo nome della nota:', page.name);
             if (newName && newName.trim()) {
                 page.name = newName.trim();
-                if (currentPageId === page.id) {
-                    document.getElementById('page-title-display').textContent = page.name;
-                }
+                if (currentPageId === page.id) document.getElementById('page-title-display').textContent = page.name;
                 render();
             }
         } else if (e.target.closest('.merge-btn')) {
@@ -766,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Conferma creazione nota (o salvataggio colore)
+    // --- MODALI LISTENERS ---
     document.getElementById('confirm-create-note-btn').addEventListener('click', () => {
         if (!onConfirmCreateCallback) return;
         const color = document.querySelector('#color-swatch-container .selected')?.dataset.color;
@@ -779,11 +754,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         createModalOverlay.classList.add('hidden');
     });
-    document.getElementById('cancel-create-note-btn').addEventListener('click', () => {
-        createModalOverlay.classList.add('hidden');
-    });
+    document.getElementById('cancel-create-note-btn').addEventListener('click', () => createModalOverlay.classList.add('hidden'));
 
-    // Gestione selezione bersaglio per unione note
     document.getElementById('merge-target-list').addEventListener('click', (e) => {
         const li = e.target.closest('li[data-note-id]');
         if (!li) return;
@@ -801,15 +773,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sourcePage && targetPage) {
             const copyPage = (page) => {
                 const newId = 'p' + Date.now().toString() + '_' + Math.random().toString(16).slice(2);
-                const newPage = {
-                    id: newId,
-                    name: page.name,
-                    color: page.color,
-                    content: page.content,
-                };
-                if (page.subPages && Array.isArray(page.subPages)) {
-                    newPage.subPages = page.subPages.map(copyPage);
-                }
+                const newPage = { id: newId, name: page.name, color: page.color, content: page.content };
+                if (page.subPages && Array.isArray(page.subPages)) newPage.subPages = page.subPages.map(copyPage);
                 return newPage;
             };
             const pageCopy = copyPage(sourcePage);
@@ -820,11 +785,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         mergeModalOverlay.classList.add('hidden');
     });
-    document.getElementById('cancel-merge-btn').addEventListener('click', () => {
-        mergeModalOverlay.classList.add('hidden');
-    });
+    document.getElementById('cancel-merge-btn').addEventListener('click', () => mergeModalOverlay.classList.add('hidden'));
 
-    // Aggiorna contenuto
+    // --- EDITOR E TOOLBAR LISTENERS ---
     editor.addEventListener('input', () => {
         if (currentPageId) {
             const { page } = findPageAndParent(currentPageId);
@@ -835,14 +798,55 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- INIZIO CODICE CORRETTO: Aggiunta listeners per salvare la selezione ---
-    // Salva la selezione quando si rilascia il mouse o si preme un tasto
     editor.addEventListener('mouseup', saveSelection);
     editor.addEventListener('keyup', saveSelection);
-    // --- FINE CODICE CORRETTO ---
+    editor.addEventListener('blur', saveSelection);
 
+    toolbar.addEventListener('mousedown', (e) => {
+        const button = e.target.closest('button[data-command]');
+        if (!button) return;
+        
+        e.preventDefault();
 
-    // Backup e importazione file
+        const command = button.dataset.command;
+        if (command === 'createLink') {
+            const url = prompt('Inserisci l\'URL del link:', 'https://');
+            if (url) {
+                document.execCommand('createLink', false, url);
+                setTimeout(() => {
+                    editor.querySelectorAll('a[href="' + url + '"]').forEach(anchor => {
+                        anchor.setAttribute('target', '_blank');
+                        anchor.setAttribute('rel', 'noopener noreferrer');
+                    });
+                }, 0);
+            }
+        } else if (command === 'insertImage') {
+            document.getElementById('image-input').click();
+        } else {
+            document.execCommand(command, false, null);
+        }
+    });
+
+    fontSizeSelect.addEventListener('change', () => {
+        const size = fontSizeSelect.value;
+        if (size && savedSelectionRange) {
+            restoreSelection();
+            document.execCommand('fontSize', false, size);
+        }
+        fontSizeSelect.value = ''; // Resetta il menu
+        editor.focus();
+    });
+
+    textColorPicker.addEventListener('change', (e) => {
+        const color = e.target.value;
+        if (color && savedSelectionRange) {
+            restoreSelection();
+            document.execCommand('foreColor', false, color);
+        }
+        editor.focus();
+    });
+    
+    // --- GESTIONE FILE E IMMAGINI ---
     document.getElementById('backup-btn').addEventListener('click', () => {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
@@ -851,6 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
         a.click();
         URL.revokeObjectURL(a.href);
     });
+
     document.getElementById('import-input').addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (!file || !confirm('Continuare? Le note attuali verranno sovrascritte.')) return;
@@ -863,163 +868,56 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentPageId = null;
                     render();
                     alert('Backup ripristinato!');
-                } else {
-                    throw new Error('File non valido.');
-                }
-            } catch (err) {
-                alert('Errore: file di backup corrotto.');
-            }
+                } else { throw new Error('File non valido.'); }
+            } catch (err) { alert('Errore: file di backup corrotto.'); }
         };
         reader.readAsText(file);
     });
 
-    // INTERAZIONE COLORE PALETTE
-    document.getElementById('color-swatch-container').addEventListener('click', (e) => {
-        const swatch = e.target.closest('.color-swatch');
-        if (!swatch) return;
-        document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('selected'));
-        swatch.classList.add('selected');
+    document.getElementById('image-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const imgHTML = `<img src="${evt.target.result}" alt="immagine" style="width:100%; max-width:100%; height:auto;" data-size="100" />`;
+                restoreSelection();
+                document.execCommand('insertHTML', false, imgHTML);
+            };
+            reader.readAsDataURL(file);
+        }
+        e.target.value = '';
     });
 
-    // Barra di formattazione
-    const toolbar = document.getElementById('formatting-toolbar');
-    if (toolbar) {
-        // --- INIZIO CODICE CORRETTO: Usiamo 'mousedown' per non perdere il focus prima dell'azione ---
-        toolbar.addEventListener('mousedown', (e) => {
-            e.preventDefault(); // Impedisce all'editor di perdere il focus
-            
-            const btn = e.target.closest('button[data-command]');
-            if (!btn) return;
-            const command = btn.dataset.command;
-            
-            if (command === 'copy') {
-                navigator.clipboard.writeText(editor.innerText);
-            } else if (command === 'createLink') {
-                const url = prompt('Inserisci l\'URL del link:', 'https://');
-                if (url) {
-                    document.execCommand('createLink', false, url);
-                    setTimeout(() => {
-                        editor.querySelectorAll('a[href="' + url + '"]').forEach(anchor => {
-                            anchor.setAttribute('target', '_blank');
-                            anchor.setAttribute('rel', 'noopener noreferrer');
-                        });
-                    }, 0);
-                }
-            } else if (command === 'insertImage') {
-                document.getElementById('image-input').click();
-            } else if (command === 'imgIncrease' || command === 'imgDecrease' || command === 'imgSetSize') {
-                if (selectedImage) {
-                    if (command === 'imgSetSize') {
-                        const currentWidth = selectedImage.style.width || (selectedImage.dataset.size ? selectedImage.dataset.size + '%' : '100%');
-                        const input = prompt('Imposta la larghezza dell\'immagine (ad es. 50% o 200px):', currentWidth);
-                        if (input) {
-                            let value = input.trim();
-                            if (/^\d+$/.test(value)) value = value + '%';
-                            selectedImage.style.width = value;
-                            if (value.endsWith('%')) selectedImage.dataset.size = parseFloat(value);
-                        }
-                    } else {
-                        let size = parseFloat(selectedImage.dataset.size) || 100;
-                        size += (command === 'imgIncrease' ? 10 : -10);
-                        if (size > 300) size = 300;
-                        if (size < 10) size = 10;
-                        selectedImage.dataset.size = size;
-                        selectedImage.style.width = size + '%';
-                    }
-                }
-            } else {
-                document.execCommand(command, false, null);
-            }
-            // Non è necessario rimettere il focus perché non lo perde più
-        });
-        // --- FINE CODICE CORRETTO ---
-    }
-
-    // Selezione dimensione del testo
-    const fontSizeSelect = document.getElementById('font-size-select');
-    if (fontSizeSelect) {
-        fontSizeSelect.addEventListener('change', () => {
-            const size = fontSizeSelect.value;
-            if (!size) return;
-            restoreSelection(); // Ripristina prima di applicare
-            document.execCommand('fontSize', false, size);
-            editor.focus();
-        });
-    }
-
-    // --- INIZIO CODICE CORRETTO: Gestione selettore colore robusta ---
-    const textColorPicker = document.getElementById('text-color-picker');
-    if (textColorPicker) {
-        textColorPicker.addEventListener('change', (e) => {
-            const color = e.target.value;
-            if (color && savedSelectionRange) { // Controlla se abbiamo una selezione salvata
-                restoreSelection(); // Ripristina la selezione salvata
-                document.execCommand('foreColor', false, color);
-            }
-            editor.focus(); // Rimette il focus all'editor per continuità
-        });
-    }
-    // --- FINE CODICE CORRETTO ---
-    
-    // Gestione inserimento immagine
-    const imageInput = document.getElementById('image-input');
-    if (imageInput) {
-        imageInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file && file.type && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    const imgHTML = '<img src="' + evt.target.result + '" alt="immagine" style="width:100%; max-width:100%; height:auto;" data-size="100" />';
-                    restoreSelection(); // Ripristina il cursore per inserire l'immagine lì
-                    document.execCommand('insertHTML', false, imgHTML);
-                    editor.focus();
-                };
-                reader.readAsDataURL(file);
-            }
-            e.target.value = '';
-        });
-    }
-
-    // Gestione drag‑and‑drop di immagini
     editor.addEventListener('dragover', (e) => e.preventDefault());
     editor.addEventListener('drop', (e) => {
         e.preventDefault();
         const files = e.dataTransfer.files;
         if (files && files.length > 0) {
-            Array.from(files).forEach((file) => {
-                if (file.type && file.type.startsWith('image/')) {
-                    const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-                    if (range) {
-                        const selection = window.getSelection();
-                        selection.removeAllRanges();
-                        selection.addRange(range);
-                    }
-                    const reader = new FileReader();
-                    reader.onload = function(evt) {
-                        const imgHTML = '<img src="' + evt.target.result + '" alt="immagine" style="width:100%; max-width:100%; height:auto;" data-size="100" />';
-                        document.execCommand('insertHTML', false, imgHTML);
-                    };
-                    reader.readAsDataURL(file);
+            const file = files[0];
+            if (file.type.startsWith('image/')) {
+                const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+                if (range) {
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
                 }
-            });
-            editor.focus();
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const imgHTML = `<img src="${evt.target.result}" alt="immagine" style="width:100%; max-width:100%; height:auto;" data-size="100" />`;
+                    document.execCommand('insertHTML', false, imgHTML);
+                };
+                reader.readAsDataURL(file);
+            }
         }
     });
 
-    // Gestione click su link e immagini
     editor.addEventListener('click', (e) => {
-        const anchor = e.target.closest('a');
-        if (anchor) {
+        if (e.target.tagName === 'A') {
             e.preventDefault();
-            window.open(anchor.href, '_blank');
-            return;
-        }
-        const img = e.target.closest('img');
-        if (img) {
-            if (selectedImage && selectedImage !== img) {
-                selectedImage.classList.remove('selected-img');
-            }
-            selectedImage = img;
+            window.open(e.target.href, '_blank');
+        } else if (e.target.tagName === 'IMG') {
+            if (selectedImage && selectedImage !== e.target) selectedImage.classList.remove('selected-img');
+            selectedImage = e.target;
             selectedImage.classList.add('selected-img');
         } else {
             if (selectedImage) selectedImage.classList.remove('selected-img');
