@@ -223,6 +223,7 @@
             padding: 6px 25px;
             background-color: var(--bg-tertiary);
             border-bottom: 1px solid var(--border-color);
+            align-items: center;
         }
         #formatting-toolbar button {
             background: none;
@@ -247,6 +248,34 @@
             padding: 4px 6px;
             border-radius: 4px;
         }
+
+        /* --- INIZIO MODIFICA CSS --- */
+        /* Stili per il selettore del colore del testo */
+        #text-color-picker {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 0;
+        }
+        #text-color-picker::-webkit-color-swatch-wrapper {
+            padding: 2px;
+            border-radius: 3px;
+        }
+        #text-color-picker::-webkit-color-swatch {
+            border: none;
+            border-radius: 2px;
+        }
+        #text-color-picker::-moz-color-swatch {
+            border: none;
+            border-radius: 2px;
+        }
+        /* --- FINE MODIFICA CSS --- */
 
         /* Stili per le immagini inserite nell'editor */
         #editor img {
@@ -405,6 +434,9 @@
                 <option value="4">Grande</option>
                 <option value="5">Molto grande</option>
             </select>
+            <!-- --- INIZIO MODIFICA HTML --- -->
+            <input type="color" id="text-color-picker" title="Colore testo">
+            <!-- --- FINE MODIFICA HTML --- -->
         </div>
         <div id="editor" contenteditable="true"></div>
             </div>
@@ -937,6 +969,23 @@ document.addEventListener('DOMContentLoaded', () => {
             editor.focus();
         });
     }
+
+    // --- INIZIO MODIFICA JAVASCRIPT ---
+    // Selettore colore testo
+    const textColorPicker = document.getElementById('text-color-picker');
+    if (textColorPicker) {
+        // Usa l'evento "input" per un'anteprima in tempo reale o "change" per applicare solo alla fine
+        textColorPicker.addEventListener('change', (e) => {
+            const color = e.target.value;
+            if (color) {
+                // Applica il colore al testo selezionato
+                document.execCommand('foreColor', false, color);
+            }
+            // Rimette il focus sull'editor per permettere la continua digitazione
+            editor.focus();
+        });
+    }
+    // --- FINE MODIFICA JAVASCRIPT ---
 
     // Gestione inserimento immagine tramite file input
     const imageInput = document.getElementById('image-input');
