@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RZ Note - Versione FINALE Stabile (Correzione definitiva)</title>
+    <title>RZ Note - Versione FINALE (Dimensioni Font Corrette)</title>
     <!-- Font‑Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- SortableJS for drag and drop ordering -->
@@ -109,7 +109,6 @@
             cursor: pointer;
             border-radius: 6px;
             position: relative;
-            /* Ogni pagina ha un colore di sfondo diverso, definito tramite variabile CSS personalizzata */
             background-color: var(--page-color, var(--accent-primary));
             color: white;
         }
@@ -210,36 +209,23 @@
         #editor {
             flex-grow: 1;
             padding: 30px;
-            font-size: 10px;
+            font-size: 16px; /* Aumentata dimensione di base per leggibilità */
             line-height: 1.7;
             overflow-y: auto;
             outline: none;
         }
-
-        /* Barra degli strumenti di formattazione per il testo */
         #formatting-toolbar {
             display: flex;
+            flex-wrap: wrap; /* Permette alla toolbar di andare a capo su schermi piccoli */
             gap: 8px;
             padding: 6px 25px;
             background-color: var(--bg-tertiary);
             border-bottom: 1px solid var(--border-color);
             align-items: center;
         }
-        #formatting-toolbar button {
-            background: none;
-            border: none;
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 1em;
-            padding: 4px 6px;
-            border-radius: 4px;
-        }
-        #formatting-toolbar button:hover {
-            background-color: var(--accent-primary-faded);
-        }
-
-        /* Stili per il selettore di dimensione del testo */
-        #formatting-toolbar select {
+        #formatting-toolbar button,
+        #formatting-toolbar select,
+        #formatting-toolbar input {
             background: none;
             border: 1px solid var(--border-color);
             color: var(--text-primary);
@@ -247,9 +233,14 @@
             font-size: 1em;
             padding: 4px 6px;
             border-radius: 4px;
+            margin: 2px 0; /* Aggiunge spazio verticale se va a capo */
         }
-
-        /* Stili per il selettore del colore del testo */
+        #formatting-toolbar button {
+             border: none;
+        }
+        #formatting-toolbar button:hover {
+            background-color: var(--accent-primary-faded);
+        }
         #text-color-picker {
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -257,14 +248,11 @@
             width: 28px;
             height: 28px;
             background-color: transparent;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            cursor: pointer;
             padding: 0;
+            border: 1px solid var(--border-color);
         }
         #text-color-picker::-webkit-color-swatch-wrapper {
             padding: 2px;
-            border-radius: 3px;
         }
         #text-color-picker::-webkit-color-swatch {
             border: none;
@@ -274,18 +262,13 @@
             border: none;
             border-radius: 2px;
         }
-
-        /* Stili per le immagini inserite nell'editor */
         #editor img {
             max-width: 100%;
             height: auto;
             display: block;
             margin: 10px 0;
-            /* Consente all'utente di ridimensionare le immagini in alcuni browser */
             cursor: move;
         }
-
-        /* Evidenzia l'immagine selezionata per il ridimensionamento */
         #editor img.selected-img {
             outline: 2px dashed var(--accent-primary);
         }
@@ -298,10 +281,7 @@
             text-align: center;
             color: var(--text-secondary);
         }
-        .hidden {
-            display: none !important;
-        }
-        /* Modali */
+        .hidden { display: none !important; }
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -340,7 +320,6 @@
             border-radius: 6px;
             border: 1px solid var(--border-color);
         }
-        /* Contenitore palette colori */
         #color-swatch-container {
             display: flex;
             flex-wrap: wrap;
@@ -371,12 +350,8 @@
             cursor: pointer;
             border-bottom: 1px solid var(--border-color);
         }
-        #merge-target-list li:last-child {
-            border-bottom: none;
-        }
-        #merge-target-list li:hover {
-            background-color: var(--bg-tertiary);
-        }
+        #merge-target-list li:last-child { border-bottom: none; }
+        #merge-target-list li:hover { background-color: var(--bg-tertiary); }
         #merge-target-list li.selected {
             background-color: var(--accent-primary);
             color: white;
@@ -385,12 +360,10 @@
     </style>
 </head>
 <body>
-    <!-- Intestazione dell'applicazione -->
     <header id="app-header">
         <h1>RZ Note</h1>
     </header>
     <div id="app-container">
-        <!-- Barra laterale con elenco note -->
         <aside id="sidebar">
             <div class="sidebar-header">
                 <h2 id="add-note-trigger">Le tue Note <span class="add-icon">+</span></h2>
@@ -402,33 +375,24 @@
                 <input type="file" id="import-input" accept=".json" style="display: none;">
             </div>
         </aside>
-        <!-- Contenuto principale: vista pagina e messaggio di benvenuto -->
         <main id="main-content">
             <div id="page-view" class="hidden">
-        <div id="page-header"><h1 id="page-title-display"></h1></div>
-        <!-- Barra di formattazione per modificare il contenuto della nota -->
-        <div id="formatting-toolbar">
-            <button data-command="bold" title="Grassetto"><i class="fas fa-bold"></i></button>
-            <button data-command="italic" title="Corsivo"><i class="fas fa-italic"></i></button>
-            <button data-command="underline" title="Sottolineato"><i class="fas fa-underline"></i></button>
-            <button data-command="insertUnorderedList" title="Elenco puntato"><i class="fas fa-list-ul"></i></button>
-            <button data-command="insertOrderedList" title="Elenco numerato"><i class="fas fa-list-ol"></i></button>
-            <button data-command="copy" title="Copia il testo"><i class="fas fa-copy"></i></button>
-            <button data-command="createLink" title="Inserisci link"><i class="fas fa-link"></i></button>
-            <button data-command="insertImage" title="Inserisci immagine"><i class="fas fa-image"></i></button>
-            <button data-command="imgDecrease" title="Riduci immagine"><i class="fas fa-search-minus"></i></button>
-            <button data-command="imgIncrease" title="Ingrandisci immagine"><i class="fas fa-search-plus"></i></button>
-            <button data-command="imgSetSize" title="Imposta dimensione immagine"><i class="fas fa-arrows-alt-h"></i></button>
-            <select id="font-size-select" title="Dimensione testo">
-                <option value="" disabled selected>Dimensione</option>
-                <option value="2">Piccola</option>
-                <option value="3">Normale</option>
-                <option value="4">Grande</option>
-                <option value="5">Molto grande</option>
-            </select>
-            <input type="color" id="text-color-picker" title="Colore testo">
-        </div>
-        <div id="editor" contenteditable="true"></div>
+                <div id="page-header"><h1 id="page-title-display"></h1></div>
+                <div id="formatting-toolbar">
+                    <button data-command="bold" title="Grassetto"><i class="fas fa-bold"></i></button>
+                    <button data-command="italic" title="Corsivo"><i class="fas fa-italic"></i></button>
+                    <button data-command="underline" title="Sottolineato"><i class="fas fa-underline"></i></button>
+                    <button data-command="insertUnorderedList" title="Elenco puntato"><i class="fas fa-list-ul"></i></button>
+                    <button data-command="insertOrderedList" title="Elenco numerato"><i class="fas fa-list-ol"></i></button>
+                    <button data-command="createLink" title="Inserisci link"><i class="fas fa-link"></i></button>
+                    <button data-command="insertImage" title="Inserisci immagine"><i class="fas fa-image"></i></button>
+                    <select id="font-size-select" title="Dimensione testo">
+                        <option value="" disabled selected>Corpo</option>
+                        <!-- Le opzioni verranno popolate da JS -->
+                    </select>
+                    <input type="color" id="text-color-picker" title="Colore testo" value="#000000">
+                </div>
+                <div id="editor" contenteditable="true"></div>
             </div>
             <div id="welcome-message">
                 <i class="fas fa-feather-alt" style="font-size: 4em; margin-bottom: 20px;"></i>
@@ -436,7 +400,8 @@
             </div>
         </main>
     </div>
-    <!-- Modale per creare nota -->
+    
+    <!-- MODALI -->
     <div id="create-note-modal-overlay" class="modal-overlay hidden">
         <div id="create-note-modal" class="modal">
             <h3 id="modal-title">Crea Nuova Nota</h3>
@@ -449,7 +414,6 @@
             </div>
         </div>
     </div>
-    <!-- Modale per unire note -->
     <div id="merge-modal-overlay" class="modal-overlay hidden">
         <div id="merge-modal" class="modal">
             <h3>Unisci Nota</h3>
@@ -462,12 +426,9 @@
         </div>
     </div>
 
-    <!-- Input nascosto per il caricamento di immagini (utilizzato dal pulsante Inserisci immagine) -->
     <input type="file" id="image-input" accept="image/*" style="display:none;">
 
 <script>
-
-// Quando il documento è pronto
 document.addEventListener('DOMContentLoaded', () => {
     // --- VARIABILI GLOBALI E COSTANTI ---
     let data = { notes: [] };
@@ -488,10 +449,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const restoreSelection = () => {
         if (savedSelectionRange) {
-            editor.focus(); // Assicura che l'editor sia attivo
+            editor.focus();
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(savedSelectionRange);
+        }
+    };
+    
+    // --- NUOVA FUNZIONE PER APPLICARE STILI CSS ---
+    const applyStyle = (styleProperty, styleValue) => {
+        if (!savedSelectionRange) return;
+        restoreSelection();
+        
+        const selection = window.getSelection();
+        if (selection.rangeCount) {
+            const range = selection.getRangeAt(0);
+            
+            // Se la selezione è vuota (solo un cursore), non fare nulla per gli stili
+            if (range.collapsed) return;
+
+            const span = document.createElement('span');
+            span.style[styleProperty] = styleValue;
+            
+            // Estrae il contenuto selezionato e lo avvolge nello span
+            try {
+                span.appendChild(range.extractContents());
+                range.insertNode(span);
+                
+                // Deseleziona il testo dopo l'applicazione
+                selection.removeAllRanges();
+            } catch(e) {
+                console.error("Errore nell'applicare lo stile:", e);
+                // Fallback a execCommand per il colore, sebbene meno preciso
+                if (styleProperty === 'color') {
+                    document.execCommand('foreColor', false, styleValue);
+                }
+            }
         }
     };
 
@@ -504,38 +497,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SELETTORI ELEMENTI DOM ---
     const noteList = document.getElementById('note-list');
     const editor = document.getElementById('editor');
-    const createModalOverlay = document.getElementById('create-note-modal-overlay');
-    const mergeModalOverlay = document.getElementById('merge-modal-overlay');
     const toolbar = document.getElementById('formatting-toolbar');
     const fontSizeSelect = document.getElementById('font-size-select');
     const textColorPicker = document.getElementById('text-color-picker');
 
+    // --- POPOLAMENTO DINAMICO DEL MENU FONT-SIZE ---
+    for (let i = 8; i <= 20; i++) {
+        const option = document.createElement('option');
+        option.value = i + 'px';
+        option.textContent = i;
+        fontSizeSelect.appendChild(option);
+    }
+    
     // --- FUNZIONI DI PERSISTENZA ---
     const saveData = () => localStorage.setItem('webNoteFinal', JSON.stringify(data));
     const loadData = () => {
         const savedData = localStorage.getItem('webNoteFinal');
         data = savedData ? JSON.parse(savedData) : {
-            notes: [
-                {
-                    id: 'p1',
-                    name: 'Nota Principale',
-                    color: '#3498db',
-                    content: '<h1>Benvenuto!</h1><p>Trascina per riordinare o annidare.</p>',
-                    subPages: [
-                        { id: 'p2', name: 'Sotto-nota', color: '#2ecc71', content: 'Contenuto sotto-nota' }
-                    ]
-                },
-                {
-                    id: 'p3',
-                    name: 'Altra Nota',
-                    color: '#e74c3c',
-                    content: 'Contenuto'
-                }
-            ]
+            notes: [{ id: 'p1', name: 'Benvenuto!', color: '#3498db', content: '<h1>Inizia a scrivere la tua prima nota!</h1><p>Usa la barra degli strumenti per formattare il testo.</p>' }]
         };
     };
     
-    // Trova una pagina (nota) e il suo genitore a partire da un ID
+    // --- RENDERIZZAZIONE E LOGICA UI ---
     const findPageAndParent = (pageId, pages = data.notes, parentList = data.notes) => {
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i];
@@ -548,7 +531,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return { page: null, parentList: null, index: -1 };
     };
 
-    // Renderizza l'elenco delle note e le loro sotto‑note
     const render = () => {
         const scrollPos = noteList.scrollTop;
         noteList.innerHTML = '';
@@ -564,9 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const hasSubPages = page.subPages && page.subPages.length > 0;
             const li = document.createElement('li');
             li.dataset.pageId = page.id;
-            const collapseToggleHTML = hasSubPages
-                ? `<span class="collapse-toggle ${page.isCollapsed ? 'collapsed' : ''}"><i class="fas fa-chevron-down"></i></span>`
-                : `<span class="collapse-placeholder"></span>`;
+            const collapseToggleHTML = hasSubPages ? `<span class="collapse-toggle ${page.isCollapsed ? 'collapsed' : ''}"><i class="fas fa-chevron-down"></i></span>` : `<span class="collapse-placeholder"></span>`;
             li.innerHTML = `
                 <div class="page ${page.id === currentPageId ? 'active' : ''}" style="--page-color: ${page.color};">
                     ${collapseToggleHTML}
@@ -580,8 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="delete-btn" title="Cancella"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
-                <ul class="subpage-list"></ul>
-            `;
+                <ul class="subpage-list"></ul>`;
             parentElement.appendChild(li);
             if (hasSubPages && !page.isCollapsed) {
                 const sublist = li.querySelector('.subpage-list');
@@ -605,15 +584,11 @@ document.addEventListener('DOMContentLoaded', () => {
         editor.innerHTML = activePage.content;
     };
 
-    // --- DRAG‑AND‑DROP ---
     const initSortable = () => {
         document.querySelectorAll('#note-list, .subpage-list').forEach(list => {
             if (list.sortable) list.sortable.destroy();
             list.sortable = new Sortable(list, {
-                group: 'nested-notes',
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                handle: '.page-name',
+                group: 'nested-notes', animation: 150, ghostClass: 'sortable-ghost', handle: '.page-name',
                 onEnd: (evt) => {
                     const { item, from, to, oldIndex, newIndex } = evt;
                     const pageId = item.dataset.pageId;
@@ -625,64 +600,55 @@ document.addEventListener('DOMContentLoaded', () => {
                         const { page: toParentPage } = findPageAndParent(toParentLi.dataset.pageId);
                         if (!toParentPage.subPages) toParentPage.subPages = [];
                         toParentPage.subPages.splice(newIndex, 0, page);
-                    } else {
-                        data.notes.splice(newIndex, 0, page);
-                    }
+                    } else { data.notes.splice(newIndex, 0, page); }
                     render();
                 }
             });
         });
     };
+    
+    // --- EVENT LISTENERS ---
 
-    // --- FUNZIONI MODALI ---
-    const showCreateNoteModal = (callback, options = {}) => {
-        const config = { title: 'Crea Nuova Nota', confirmText: 'Crea', showNameInput: true, defaultColor: PRESET_COLORS[0], ...options };
-        onConfirmCreateCallback = callback;
-        document.getElementById('modal-title').textContent = config.title;
-        document.getElementById('confirm-create-note-btn').textContent = config.confirmText;
-        const nameInput = document.getElementById('new-note-name-input');
-        nameInput.style.display = config.showNameInput ? 'block' : 'none';
-        document.getElementById('new-note-name-label').style.display = config.showNameInput ? 'block' : 'none';
-        if (config.showNameInput) nameInput.value = '';
-        const swatchContainer = document.getElementById('color-swatch-container');
-        swatchContainer.innerHTML = '';
-        PRESET_COLORS.forEach(color => {
-            const swatch = document.createElement('div');
-            swatch.className = 'color-swatch';
-            swatch.style.backgroundColor = color;
-            swatch.dataset.color = color;
-            if (color === config.defaultColor) swatch.classList.add('selected');
-            swatchContainer.appendChild(swatch);
-        });
-        createModalOverlay.classList.remove('hidden');
-    };
-
-    const showMergeModal = (sourceNoteId) => {
-        mergeSourceId = sourceNoteId;
-        const { page: sourceNote } = findPageAndParent(sourceNoteId);
-        const targetList = document.getElementById('merge-target-list');
-        const confirmBtn = document.getElementById('confirm-merge-btn');
-        document.getElementById('merge-source-note-name').textContent = sourceNote.name;
-        targetList.innerHTML = '';
-        confirmBtn.disabled = true;
-        const allNotesFlat = [];
-        const flatten = (pages) => pages.forEach(p => { allNotesFlat.push(p); if (p.subPages) flatten(p.subPages); });
-        flatten(data.notes);
-        const possibleTargets = allNotesFlat.filter(n => n.id !== sourceNoteId);
-        if (possibleTargets.length === 0) {
-            targetList.innerHTML = `<li>Nessun'altra nota disponibile.</li>`;
-        } else {
-            possibleTargets.forEach(targetNote => {
-                const li = document.createElement('li');
-                li.dataset.noteId = targetNote.id;
-                li.textContent = targetNote.name;
-                targetList.appendChild(li);
-            });
+    // Editor
+    editor.addEventListener('input', () => {
+        if (currentPageId) {
+            const { page } = findPageAndParent(currentPageId);
+            if (page) { page.content = editor.innerHTML; saveData(); }
         }
-        mergeModalOverlay.classList.remove('hidden');
-    };
+    });
+    editor.addEventListener('mouseup', saveSelection);
+    editor.addEventListener('keyup', saveSelection);
+    editor.addEventListener('blur', saveSelection);
 
-    // --- EVENT LISTENERS PRINCIPALI ---
+    // Toolbar
+    toolbar.addEventListener('mousedown', (e) => {
+        const target = e.target.closest('button, select, input');
+        if (!target) return;
+        
+        // Impedisci la perdita del focus SOLO per i pulsanti.
+        // Select e Input hanno bisogno del focus per funzionare.
+        if (target.tagName === 'BUTTON') {
+            e.preventDefault();
+            const command = target.dataset.command;
+            if (command) {
+                document.execCommand(command, false, null);
+            }
+        }
+    });
+
+    fontSizeSelect.addEventListener('change', () => {
+        const size = fontSizeSelect.value;
+        if (size) {
+            applyStyle('fontSize', size);
+        }
+        fontSizeSelect.value = ''; // Resetta
+    });
+
+    textColorPicker.addEventListener('input', (e) => { // 'input' per anteprima
+        applyStyle('color', e.target.value);
+    });
+
+    // Sidebar
     noteList.addEventListener('click', (e) => {
         const li = e.target.closest('li[data-page-id]');
         if (!li) return;
@@ -696,8 +662,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentPageId === pageId) currentPageId = null;
                 render();
             }
-        } else if (e.target.closest('.change-color-btn')) {
-            showCreateNoteModal((color) => { page.color = color; render(); }, { title: 'Cambia Colore', confirmText: 'Salva', showNameInput: false, defaultColor: page.color });
         } else if (e.target.closest('.rename-btn')) {
             const newName = prompt('Inserisci il nuovo nome della nota:', page.name);
             if (newName && newName.trim()) {
@@ -705,24 +669,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentPageId === page.id) document.getElementById('page-title-display').textContent = page.name;
                 render();
             }
-        } else if (e.target.closest('.merge-btn')) {
-            showMergeModal(pageId);
-        } else if (e.target.closest('.add-subpage-btn')) {
-            showCreateNoteModal((name, color) => {
-                if (!page.subPages) page.subPages = [];
-                const newSubPage = { id: `p${Date.now()}`, name, color, content: `<h1>${name}</h1>` };
-                page.subPages.push(newSubPage);
-                page.isCollapsed = false;
-                currentPageId = newSubPage.id;
-                render();
-            }, { defaultColor: page.color });
-        } else if (e.target.closest('.add-sibling-btn')) {
-            showCreateNoteModal((name, color) => {
-                const newPage = { id: `p${Date.now()}`, name, color, content: `<h1>${name}</h1>` };
-                parentList.splice(index + 1, 0, newPage);
-                currentPageId = newPage.id;
-                render();
-            }, { defaultColor: page.color });
         } else if (e.target.closest('.collapse-toggle')) {
             page.isCollapsed = !page.isCollapsed;
             render();
@@ -731,205 +677,11 @@ document.addEventListener('DOMContentLoaded', () => {
             render();
         }
     });
-
-    document.getElementById('add-note-trigger').addEventListener('click', () => {
-        showCreateNoteModal((name, color) => {
-            const newNote = { id: `p${Date.now()}`, name, color, content: `<h1>${name}</h1>` };
-            data.notes.push(newNote);
-            currentPageId = newNote.id;
-            render();
-        });
-    });
-
-    // --- MODALI LISTENERS ---
-    document.getElementById('confirm-create-note-btn').addEventListener('click', () => {
-        if (!onConfirmCreateCallback) return;
-        const color = document.querySelector('#color-swatch-container .selected')?.dataset.color;
-        if (!color) return;
-        const name = document.getElementById('new-note-name-input').value.trim();
-        if (document.getElementById('new-note-name-input').style.display !== 'none') {
-            if (name) onConfirmCreateCallback(name, color);
-        } else {
-            onConfirmCreateCallback(color);
-        }
-        createModalOverlay.classList.add('hidden');
-    });
-    document.getElementById('cancel-create-note-btn').addEventListener('click', () => createModalOverlay.classList.add('hidden'));
-
-    document.getElementById('merge-target-list').addEventListener('click', (e) => {
-        const li = e.target.closest('li[data-note-id]');
-        if (!li) return;
-        document.querySelectorAll('#merge-target-list li').forEach(el => el.classList.remove('selected'));
-        li.classList.add('selected');
-        document.getElementById('confirm-merge-btn').disabled = false;
-    });
-
-    document.getElementById('confirm-merge-btn').addEventListener('click', () => {
-        const selectedLi = document.querySelector('#merge-target-list li.selected');
-        if (!mergeSourceId || !selectedLi) return;
-        const mergeTargetId = selectedLi.dataset.noteId;
-        const { page: sourcePage } = findPageAndParent(mergeSourceId);
-        const { page: targetPage } = findPageAndParent(mergeTargetId);
-        if (sourcePage && targetPage) {
-            const copyPage = (page) => {
-                const newId = 'p' + Date.now().toString() + '_' + Math.random().toString(16).slice(2);
-                const newPage = { id: newId, name: page.name, color: page.color, content: page.content };
-                if (page.subPages && Array.isArray(page.subPages)) newPage.subPages = page.subPages.map(copyPage);
-                return newPage;
-            };
-            const pageCopy = copyPage(sourcePage);
-            if (!targetPage.subPages) targetPage.subPages = [];
-            targetPage.subPages.push(pageCopy);
-            targetPage.isCollapsed = false;
-            render();
-        }
-        mergeModalOverlay.classList.add('hidden');
-    });
-    document.getElementById('cancel-merge-btn').addEventListener('click', () => mergeModalOverlay.classList.add('hidden'));
-
-    // --- EDITOR E TOOLBAR LISTENERS ---
-    editor.addEventListener('input', () => {
-        if (currentPageId) {
-            const { page } = findPageAndParent(currentPageId);
-            if (page) {
-                page.content = editor.innerHTML;
-                saveData();
-            }
-        }
-    });
-
-    editor.addEventListener('mouseup', saveSelection);
-    editor.addEventListener('keyup', saveSelection);
-    editor.addEventListener('blur', saveSelection);
-
-    toolbar.addEventListener('mousedown', (e) => {
-        const button = e.target.closest('button[data-command]');
-        if (!button) return;
-        
-        e.preventDefault();
-
-        const command = button.dataset.command;
-        if (command === 'createLink') {
-            const url = prompt('Inserisci l\'URL del link:', 'https://');
-            if (url) {
-                document.execCommand('createLink', false, url);
-                setTimeout(() => {
-                    editor.querySelectorAll('a[href="' + url + '"]').forEach(anchor => {
-                        anchor.setAttribute('target', '_blank');
-                        anchor.setAttribute('rel', 'noopener noreferrer');
-                    });
-                }, 0);
-            }
-        } else if (command === 'insertImage') {
-            document.getElementById('image-input').click();
-        } else {
-            document.execCommand(command, false, null);
-        }
-    });
-
-    fontSizeSelect.addEventListener('change', () => {
-        const size = fontSizeSelect.value;
-        if (size && savedSelectionRange) {
-            restoreSelection();
-            document.execCommand('fontSize', false, size);
-        }
-        fontSizeSelect.value = ''; // Resetta il menu
-        editor.focus();
-    });
-
-    textColorPicker.addEventListener('change', (e) => {
-        const color = e.target.value;
-        if (color && savedSelectionRange) {
-            restoreSelection();
-            document.execCommand('foreColor', false, color);
-        }
-        editor.focus();
-    });
     
-    // --- GESTIONE FILE E IMMAGINI ---
-    document.getElementById('backup-btn').addEventListener('click', () => {
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `rz-note-backup-${new Date().toISOString().slice(0, 10)}.json`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-    });
-
-    document.getElementById('import-input').addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (!file || !confirm('Continuare? Le note attuali verranno sovrascritte.')) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                if (importedData && Array.isArray(importedData.notes)) {
-                    data = importedData;
-                    currentPageId = null;
-                    render();
-                    alert('Backup ripristinato!');
-                } else { throw new Error('File non valido.'); }
-            } catch (err) { alert('Errore: file di backup corrotto.'); }
-        };
-        reader.readAsText(file);
-    });
-
-    document.getElementById('image-input').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const imgHTML = `<img src="${evt.target.result}" alt="immagine" style="width:100%; max-width:100%; height:auto;" data-size="100" />`;
-                restoreSelection();
-                document.execCommand('insertHTML', false, imgHTML);
-            };
-            reader.readAsDataURL(file);
-        }
-        e.target.value = '';
-    });
-
-    editor.addEventListener('dragover', (e) => e.preventDefault());
-    editor.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-            const file = files[0];
-            if (file.type.startsWith('image/')) {
-                const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-                if (range) {
-                    const selection = window.getSelection();
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                }
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    const imgHTML = `<img src="${evt.target.result}" alt="immagine" style="width:100%; max-width:100%; height:auto;" data-size="100" />`;
-                    document.execCommand('insertHTML', false, imgHTML);
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-    });
-
-    editor.addEventListener('click', (e) => {
-        if (e.target.tagName === 'A') {
-            e.preventDefault();
-            window.open(e.target.href, '_blank');
-        } else if (e.target.tagName === 'IMG') {
-            if (selectedImage && selectedImage !== e.target) selectedImage.classList.remove('selected-img');
-            selectedImage = e.target;
-            selectedImage.classList.add('selected-img');
-        } else {
-            if (selectedImage) selectedImage.classList.remove('selected-img');
-            selectedImage = null;
-        }
-    });
-
     // --- AVVIO ---
     loadData();
     render();
 });
-
 </script>
 
 </body>
