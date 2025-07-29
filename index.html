@@ -481,7 +481,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let onConfirmCreateCallback = null;
     let mergeSourceId = null;
     let selectedImage = null; // Memorizza l'immagine attualmente selezionata
-    let savedSelectionRange = null; // --- NUOVA VARIABILE: Memorizza la selezione del testo
+    
+    // --- INIZIO CODICE CORRETTO: Variabile e funzioni per la gestione della selezione ---
+    let savedSelectionRange = null; 
+
+    // Salva l'oggetto "Range" della selezione corrente
+    const saveSelection = () => {
+        const selection = window.getSelection();
+        if (selection.getRangeAt && selection.rangeCount && editor.contains(selection.anchorNode)) {
+             // Salva la selezione solo se è all'interno dell'editor
+            savedSelectionRange = selection.getRangeAt(0);
+        } else {
+            savedSelectionRange = null;
+        }
+    };
+
+    // Ripristina la selezione salvata
+    const restoreSelection = () => {
+        if (savedSelectionRange) {
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(savedSelectionRange);
+        }
+    };
+    // --- FINE CODICE CORRETTO ---
 
     const PRESET_COLORS = [
         '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f', '#1976d2',
@@ -518,23 +541,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             ]
         };
-    };
-
-    // --- NUOVA FUNZIONE per salvare la selezione del testo ---
-    const saveSelection = () => {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0 && editor.contains(selection.anchorNode)) {
-            savedSelectionRange = selection.getRangeAt(0);
-        }
-    };
-
-    // --- NUOVA FUNZIONE per ripristinare la selezione del testo ---
-    const restoreSelection = () => {
-        if (savedSelectionRange) {
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(savedSelectionRange);
-        }
     };
     
     // Trova una pagina (nota) e il suo genitore a partire da un ID
@@ -818,7 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mergeModalOverlay.classList.add('hidden');
     });
 
-    // Aggiorna contenuto e salva selezione
+    // Aggiorna contenuto
     editor.addEventListener('input', () => {
         if (currentPageId) {
             const { page } = findPageAndParent(currentPageId);
@@ -828,9 +834,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    // --- MODIFICA: Salva la selezione quando l'utente la rilascia o usa la tastiera ---
+
+    // --- INIZIO CODICE CORRETTO: Aggiunta listeners per salvare la selezione ---
+    // Salva la selezione quando si rilascia il mouse o si preme un tasto
     editor.addEventListener('mouseup', saveSelection);
     editor.addEventListener('keyup', saveSelection);
+    // --- FINE CODICE CORRETTO ---
 
 
     // Backup e importazione file
@@ -875,9 +884,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Barra di formattazione
     const toolbar = document.getElementById('formatting-toolbar');
     if (toolbar) {
-        toolbar.addEventListener('click', (e) => {
-            // Salva la selezione prima di ogni azione sulla toolbar
-            saveSelection();
+        // --- INIZIO CODICE CORRETTO: Usiamo 'mousedown' per non perdere il focus prima dell'azione ---
+        toolbar.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // Impedisce all'editor di perdere il focus
             
             const btn = e.target.closest('button[data-command]');
             if (!btn) return;
@@ -888,23 +897,13 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (command === 'createLink') {
                 const url = prompt('Inserisci l\'URL del link:', 'https://');
                 if (url) {
-                    restoreSelection(); // Ripristina per applicare il link alla selezione corretta
-                    const sel = window.getSelection();
-                    if (sel && !sel.isCollapsed) {
-                        document.execCommand('createLink', false, url);
-                        setTimeout(() => {
-                            editor.querySelectorAll('a[href="' + url + '"]').forEach(anchor => {
-                                anchor.setAttribute('target', '_blank');
-                                anchor.setAttribute('rel', 'noopener noreferrer');
-                            });
-                        }, 0);
-                    } else {
-                        const text = prompt('Testo del link', url);
-                        if (text) {
-                            const html = '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + text + '</a>';
-                            document.execCommand('insertHTML', false, html);
-                        }
-                    }
+                    document.execCommand('createLink', false, url);
+                    setTimeout(() => {
+                        editor.querySelectorAll('a[href="' + url + '"]').forEach(anchor => {
+                            anchor.setAttribute('target', '_blank');
+                            anchor.setAttribute('rel', 'noopener noreferrer');
+                        });
+                    }, 0);
                 }
             } else if (command === 'insertImage') {
                 document.getElementById('image-input').click();
@@ -929,11 +928,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } else {
-                restoreSelection(); // Ripristina per i comandi standard
                 document.execCommand(command, false, null);
             }
-            editor.focus();
+            // Non è necessario rimettere il focus perché non lo perde più
         });
+        // --- FINE CODICE CORRETTO ---
     }
 
     // Selezione dimensione del testo
@@ -942,25 +941,25 @@ document.addEventListener('DOMContentLoaded', () => {
         fontSizeSelect.addEventListener('change', () => {
             const size = fontSizeSelect.value;
             if (!size) return;
-            saveSelection(); // Salva la selezione prima del change
             restoreSelection(); // Ripristina prima di applicare
             document.execCommand('fontSize', false, size);
             editor.focus();
         });
     }
 
-    // --- MODIFICA CODICE SELETTORE COLORE ---
+    // --- INIZIO CODICE CORRETTO: Gestione selettore colore robusta ---
     const textColorPicker = document.getElementById('text-color-picker');
     if (textColorPicker) {
-        textColorPicker.addEventListener('input', (e) => { // 'input' per anteprima live
+        textColorPicker.addEventListener('change', (e) => {
             const color = e.target.value;
-            if (color) {
+            if (color && savedSelectionRange) { // Controlla se abbiamo una selezione salvata
                 restoreSelection(); // Ripristina la selezione salvata
-                editor.focus();     // Assicura che l'editor abbia il focus
                 document.execCommand('foreColor', false, color);
             }
+            editor.focus(); // Rimette il focus all'editor per continuità
         });
     }
+    // --- FINE CODICE CORRETTO ---
     
     // Gestione inserimento immagine
     const imageInput = document.getElementById('image-input');
@@ -971,7 +970,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const reader = new FileReader();
                 reader.onload = function(evt) {
                     const imgHTML = '<img src="' + evt.target.result + '" alt="immagine" style="width:100%; max-width:100%; height:auto;" data-size="100" />';
-                    restoreSelection(); // Ripristina il cursore
+                    restoreSelection(); // Ripristina il cursore per inserire l'immagine lì
                     document.execCommand('insertHTML', false, imgHTML);
                     editor.focus();
                 };
