@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RZ Note - Importazione Avanzata</title>
+    <title>RZ Note - Versione Stabile e Completa</title>
     <!-- Font‑Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- SortableJS for drag and drop ordering -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
-        /* CSS (Aggiunta classe .btn-danger) */
+        /* CSS (invariato) */
         :root {
             --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             --bg-primary: #fdfdfd; --bg-secondary: #f4f4f5; --bg-tertiary: #e9e9ed; --bg-header: #2c3e50;
@@ -126,7 +126,6 @@
     <div id="merge-modal-overlay" class="modal-overlay hidden">
         <div class="modal"> <h3>Unisci Nota</h3> <p>Unisci "<strong id="merge-source-note-name"></strong>" in:</p> <ul id="merge-target-list"></ul> <div class="modal-actions"> <button id="cancel-merge-btn">Annulla</button> <button id="confirm-merge-btn" disabled>Unisci</button> </div> </div>
     </div>
-    <!-- NUOVO MODALE PER LE OPZIONI DI IMPORTAZIONE -->
     <div id="import-options-modal-overlay" class="modal-overlay hidden">
         <div class="modal">
             <h3>Importa Note</h3>
@@ -160,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- PERSISTENZA DATI ---
     const saveData = () => localStorage.setItem('rzNoteApp', JSON.stringify(data));
-    const loadData = () => { try { const parsedData = JSON.parse(localStorage.getItem('rzNoteApp')); if (parsedData && Array.isArray(parsedData.notes)) { data = parsedData; } else { throw new Error("Formato dati non valido"); } } catch (e) { console.warn("Dati non trovati o corrotti. Ripristino dati di default.", e.message); data = { notes: [{ id: generateId(), name: 'Benvenuto!', color: '#3498db', content: `<h1>Ciao! Trascina un'immagine qui.</h1><p>Oppure usa la barra degli strumenti per formattare il testo e inserire link.</p>`, subPages: [], isCollapsed: false }] }; } };
+    const loadData = () => { try { const parsedData = JSON.parse(localStorage.getItem('rzNoteApp')); if (parsedData && Array.isArray(parsedData.notes)) { data = parsedData; } else { throw new Error("Formato dati non valido"); } } catch (e) { console.warn("Dati non trovati o corrotti. Ripristino dati di default.", e.message); data = { notes: [{ id: generateId(), name: 'Benvenuto!', color: '#3498db', content: `<h1>Ciao! Trascina un'immagine qui.</h1><p>Oppure usa la barra degli strumenti per formattare il testo e <a href="https://www.google.com" target="_blank">creare link</a>.</p>`, subPages: [], isCollapsed: false }] }; } };
     
     // --- RENDERIZZAZIONE UI ---
     const render = () => { const scrollPos = noteList.scrollTop; noteList.innerHTML = ''; if (data.notes.length > 0) renderPagesRecursive(data.notes, noteList); noteList.scrollTop = scrollPos; initSortable(); updateActivePageContent(); saveData(); };
@@ -169,8 +168,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const initSortable = () => { document.querySelectorAll('#note-list, .subpage-list').forEach(list => { if (list.sortable) list.sortable.destroy(); list.sortable = new Sortable(list, { group: 'nested-notes', animation: 150, ghostClass: 'sortable-ghost', handle: '.page-name', onEnd: (evt) => { const { item, to, newIndex } = evt; const pageId = item.dataset.pageId; const { page, parentList: fromParentList } = findPageAndParent(pageId); if (!page) return; fromParentList.splice(fromParentList.indexOf(page), 1); const toParentLi = to.closest('li[data-page-id]'); if (toParentLi && toParentLi.dataset.pageId !== pageId) { const { page: toParentPage } = findPageAndParent(toParentLi.dataset.pageId); if (toParentPage) { if (!toParentPage.subPages) toParentPage.subPages = []; toParentPage.subPages.splice(newIndex, 0, page); } } else { data.notes.splice(newIndex, 0, page); } render(); } }); }); };
 
     // --- LOGICA EDITOR E COMANDI ---
-    const executeCommand = (command) => { editor.focus(); if (savedSelectionRange) { const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(savedSelectionRange); } if (command === 'createLink') { if (!window.getSelection().rangeCount || window.getSelection().getRangeAt(0).collapsed) { alert("Per favore, seleziona prima il testo da trasformare in link."); return; } const url = prompt("Inserisci l'URL per il link:"); if (url) document.execCommand(command, false, url); } else if (command === 'insertImage') { const url = prompt("Inserisci l'URL dell'immagine:"); if (url) document.execCommand(command, false, url); } else { document.execCommand(command, false, null); } };
-    const applyStyleToSelection = (property, value) => { editor.focus(); if (savedSelectionRange && !savedSelectionRange.collapsed) { const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(savedSelectionRange); const span = document.createElement('span'); span.style[property] = value; span.appendChild(savedSelectionRange.extractContents()); savedSelectionRange.insertNode(span); selection.removeAllRanges(); } };
+    const restoreSelection = () => { editor.focus(); if (savedSelectionRange) { const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(savedSelectionRange); } };
+    const executeCommand = (command) => {
+        restoreSelection();
+        if (command === 'createLink') {
+            const selection = window.getSelection();
+            if (!selection.rangeCount || selection.getRangeAt(0).collapsed) {
+                alert("Per favore, seleziona prima il testo da trasformare in link."); return;
+            }
+            const url = prompt("Inserisci l'URL per il link:");
+            if (url) document.execCommand(command, false, url);
+        } else if (command === 'insertImage') {
+            const url = prompt("Inserisci l'URL dell'immagine:");
+            if (url) document.execCommand(command, false, url);
+        } else {
+            document.execCommand(command, false, null);
+        }
+    };
+    const applyStyleToSelection = (property, value) => { restoreSelection(); if (savedSelectionRange && !savedSelectionRange.collapsed) { const span = document.createElement('span'); span.style[property] = value; span.appendChild(savedSelectionRange.extractContents()); savedSelectionRange.insertNode(span); window.getSelection().removeAllRanges(); } };
     
     // --- LOGICA IMMAGINI (SELEZIONE, RIDIMENSIONAMENTO, DRAG & DROP) ---
     let selectedImg = null; let startX, startY, startWidth, startHeight, handleDir, aspectRatio;
@@ -199,12 +214,26 @@ document.addEventListener('DOMContentLoaded', () => {
     editor.addEventListener('input', () => { if (currentPageId) { const { page } = findPageAndParent(currentPageId); if (page) { page.content = editor.innerHTML; saveData(); } } });
     editor.addEventListener('paste', (e) => { e.preventDefault(); const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain'); document.execCommand('insertHTML', false, simplePasteSanitize(text)); });
     document.addEventListener('selectionchange', () => { if (!editor.contains(window.getSelection().anchorNode)) return; const selection = window.getSelection(); if (selection.rangeCount > 0) savedSelectionRange = selection.getRangeAt(0).cloneRange(); });
-    editor.addEventListener('click', (e) => { if (e.target.tagName === 'IMG') { selectImage(e.target); } else if (!e.target.closest('#image-resizer')) { deselectImage(); } });
+    
+    // CORREZIONE DEFINITIVA PER I LINK CLICCABILI
+    editor.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (link && link.href) {
+            e.preventDefault();
+            window.open(link.href, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        if (e.target.tagName === 'IMG') {
+            selectImage(e.target);
+        } else if (!e.target.closest('#image-resizer')) {
+            deselectImage();
+        }
+    });
     
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => editor.addEventListener(eventName, e => {e.preventDefault(); e.stopPropagation();}));
     editor.addEventListener('dragenter', () => editor.classList.add('drag-over'));
     editor.addEventListener('dragleave', () => editor.classList.remove('drag-over'));
-    editor.addEventListener('drop', (e) => { editor.classList.remove('drag-over'); deselectImage(); const files = e.dataTransfer.files; if (files.length > 0) { editor.focus(); if(savedSelectionRange) { window.getSelection().removeAllRanges(); window.getSelection().addRange(savedSelectionRange); } for (const file of files) { if (file.type.startsWith('image/')) { const reader = new FileReader(); reader.onload = () => document.execCommand('insertHTML', false, `<img src="${reader.result}" />`); reader.readAsDataURL(file); } } } });
+    editor.addEventListener('drop', (e) => { editor.classList.remove('drag-over'); deselectImage(); const files = e.dataTransfer.files; if (files.length > 0) { restoreSelection(); for (const file of files) { if (file.type.startsWith('image/')) { const reader = new FileReader(); reader.onload = () => document.execCommand('insertHTML', false, `<img src="${reader.result}" />`); reader.readAsDataURL(file); } } } });
 
     toolbar.addEventListener('mousedown', (e) => { const target = e.target.closest('button'); if (!target || !target.dataset.command) return; e.preventDefault(); executeCommand(target.dataset.command); });
     fontSizeSelect.addEventListener('change', () => { if (fontSizeSelect.value) applyStyleToSelection('fontSize', fontSizeSelect.value); fontSizeSelect.value = ''; });
@@ -220,7 +249,6 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelMergeBtn.addEventListener('click', closeMergeModal);
     mergeTargetList.addEventListener('click', (e) => { if(e.target.tagName === 'LI') { mergeTargetList.querySelector('.selected')?.classList.remove('selected'); e.target.classList.add('selected'); confirmMergeBtn.disabled = false; } });
 
-    // Listeners per il nuovo modale di importazione
     importCancelBtn.addEventListener('click', closeImportOptionsModal);
     importOverwriteBtn.addEventListener('click', () => { if (!dataToImport) return; data = dataToImport; currentPageId = null; render(); closeImportOptionsModal(); });
     importAppendBtn.addEventListener('click', () => { if (!dataToImport || !Array.isArray(dataToImport.notes)) return; data.notes.push(...dataToImport.notes); render(); closeImportOptionsModal(); });
